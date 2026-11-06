@@ -161,7 +161,7 @@ nav.tabs .badge{position:absolute;top:5px;left:calc(50% + 6px);min-width:17px;he
 <nav class="tabs" aria-label="Sections"><div class="in" id="tabs"></div></nav>
 <div id="layer"></div>
 <input type="file" id="fbImage" accept="image/*" hidden>
-<input type="file" id="fbCsv" accept=".csv,text/csv,text/plain" hidden>
+<input type="file" id="fbCsv" accept=".csv,.xlsx,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
 
 <script src="logic.js"></script>
 <script>
@@ -614,6 +614,36 @@ function cookedSheet(ix){
     <button class="btn primary" data-act="cookedDo">Done</button>`);
 }
 
+/* Look up barcoded items in Open Food Facts to fill in missing pictures and categories */
+let enriching=false;
+async function enrichItems(){
+  if(enriching||offline()) return;
+  const todo=S.items.filter(i=>i.barcode&&!i.offChecked&&(!i.image&&!i.photo||i.category==="Other"||!i.brand));
+  if(!todo.length) return;
+  enriching=true; let done=0, found=0, pics=0;
+  const work=todo.slice(); 
+  async function worker(){
+    while(work.length){
+      const it=work.shift();
+      try{
+        const j=await getJSON(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(it.barcode)}.json?fields=${OFF_FIELDS}`,15000);
+        if(j&&j.status===1&&j.product){
+          const p=KL.mapOFF(j.product,it.barcode); found++;
+          if(p.image&&!it.image&&!it.photo){ it.image=p.image; pics++; }
+          if(it.category==="Other"&&p.category&&p.category!=="Other") it.category=p.category;
+          if(!it.brand&&p.brand) it.brand=p.brand;
+          if(!S.barcodes[it.barcode]) S.barcodes[it.barcode]={name:it.name,brand:it.brand,category:it.category,unit:it.unit,qty:it.qty,location:it.location,image:it.image||null,photo:it.photo||null,base:it.base||null,shelfDays:p.shelfDays};
+        }
+      }catch(e){}
+      it.offChecked=true; done++;
+      if(done%8===0){ save(); render(); toast(`Finding pictures… ${done}/${todo.length}`); }
+    }
+  }
+  await Promise.all([worker(),worker(),worker()]);
+  enriching=false; save(); render();
+  if(found) toast(`${pics} pictures and details added from Open Food Facts`);
+}
+
 /* CSV */
 let importPreview=null;
 function dataSheet(){
@@ -621,8 +651,8 @@ function dataSheet(){
     <div class="card"><h3>Export inventory</h3><p class="note">All ${S.items.length} items as a CSV file for Excel or Google Sheets. It's saved to your Downloads folder.</p>
       <div class="row"><button class="btn primary" data-act="exportCsv" ${S.items.length?"":"disabled"}>Save CSV</button><button class="btn" data-act="shareCsv" ${S.items.length?"":"disabled"}>Share CSV</button></div></div>
     <div class="card"><h3>Import inventory</h3>
-      <p class="note">Works with exports from KitchenPal and other apps, in English, French or German. Columns like name, amount, unit, category, storage place, expiry date and barcode are found automatically, and you see what was recognized before anything is added.</p>
-      <button class="btn" data-act="importCsv">Choose CSV file</button>
+      <p class="note">Works with CSV and Excel (.xlsx) exports from KitchenPal and other apps, in English, French or German. Columns like name, amount, unit, category, storage place, expiry date and barcode are found automatically, and you see what was recognized before anything is added.</p>
+      <button class="btn" data-act="importCsv">Choose CSV or Excel file</button>
       <div id="importBox"></div></div>
     <p class="note">Your inventory is stored on this phone. Export a CSV now and then as a backup.</p>`);
 }
@@ -630,8 +660,8 @@ function showImport(){
   const box=document.getElementById("importBox"); if(!box) return;
   const {items,skipped}=importPreview;
   if(!items.length){ box.innerHTML=`<p class="err">No items found. Check that the file has a header row with a name column.</p>`; return; }
-  const LBL={name:"Name",brand:"Brand",quantity:"Amount",unit:"Unit",category:"Category",location:"Stored in",best_before:"Best before",added:"Added",min_quantity:"Reminder level",barcode:"Barcode",image:"Picture",notes:"Notes"};
-  const cols=(importPreview.columns||[]).filter(([f])=>f!=="notes");
+  const LBL={name:"Name",brand:"Brand",quantity:"Amount",unit:"Unit",category:"Category",location:"Stored in",best_before:"Best before",added:"Added",min_quantity:"Reminder level",barcode:"Barcode",image:"Picture",notes:"Notes",pieces:"Pieces",percent:"Amount left"};
+  const cols=(importPreview.columns||[]).filter(([f])=>f!=="notes"&&f!=="store");
   const unknown=items.filter(i=>i.category==="Other").length;
   box.innerHTML=`<p class="note"><b>${items.length} items</b> ready${skipped?`, ${skipped} empty rows skipped`:""}.</p>
     ${cols.length?`<div class="meta">${cols.map(([f,h])=>`<span class="tag ok">${esc(h)} → ${LBL[f]||f}</span>`).join("")}</div>`:""}
@@ -710,6 +740,7 @@ document.addEventListener("click",async e=>{
     if(mode==="replace") S.items=[];
     importPreview.items.forEach(n=>{ addItem(n); if(n.barcode&&!S.barcodes[n.barcode]) rememberBarcode(n); });
     const n=importPreview.items.length; importPreview=null; closeSheet(); ui.tab="pantry"; ui.loc="all"; commit(); toast(`${n} items imported`);
+    setTimeout(enrichItems,1200);
   }
 });
 document.addEventListener("change",e=>{

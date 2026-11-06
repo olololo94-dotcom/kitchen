@@ -27,7 +27,7 @@ Pork|Meat & fish|fridge|3|pork,porc,schwein,schweinefleisch,kotelett,cotelette
 Ham|Meat & fish|fridge|7|ham,jambon,schinken,ham sliced
 Bacon|Meat & fish|fridge|10|bacon,lardons,speck,lard
 Sausages|Meat & fish|fridge|7|sausage,saucisse,wurst,wurstchen,mettwurst,merguez,bratwurst
-Salami|Meat & fish|fridge|21|salami,chorizo
+Salami|Meat & fish|fridge|21|salami,chorizo,nduja
 Salmon|Meat & fish|fridge|2|salmon,saumon,lachs
 Tuna|Canned & jars|pantry|700|tuna,thon,thunfisch
 Fish|Meat & fish|fridge|2|fish,poisson,fisch,cabillaud,kabeljau,colin
@@ -103,6 +103,10 @@ Jam|Canned & jars|pantry|365|jam,confiture,marmelade,konfiture
 Peanut butter|Canned & jars|pantry|270|peanut butter,beurre de cacahuete,erdnussbutter
 Chocolate spread|Canned & jars|pantry|270|nutella,pate a tartiner,nuss nougat
 Chocolate|Snacks|pantry|270|chocolate,chocolat,schokolade,schoko
+Snack bar|Snacks|pantry|180|peanut bar,cereal bar,chocolate bar,muesli bar,protein bar,riegel,snack,snacks,nougat,haribo,gummies,bonbons,candy,croky,popcorn
+Energy drink|Drinks|pantry|365|energy drink,red bull,monster energy
+Kimchi|Canned & jars|fridge|60|kimchi,sauerkraut,choucroute,pickles,cornichons,gurken
+Ready meal|Other|fridge|3|oven dish,ready meal,plat cuisine,fertiggericht,lasagne bolognese
 Biscuits|Snacks|pantry|180|biscuit,biscuits,cookies,kekse,gaufrettes,speculoos
 Crisps|Snacks|pantry|120|crisps,chips,pringles
 Nuts|Snacks|pantry|180|nuts,noix,nusse,almonds,amandes,mandeln,cashew,peanuts,cacahuetes
@@ -116,7 +120,7 @@ Toilet paper|Household|pantry|0|toilet paper,papier toilette,toilettenpapier,klo
 Dish soap|Household|pantry|0|dish soap,liquide vaisselle,spulmittel,dreft,pril
 Detergent|Household|pantry|0|detergent,lessive,waschmittel,ariel,persil megaperls
 Kitchen roll|Household|pantry|0|kitchen roll,essuie tout,kuchenrolle,sopalin
-Bin bags|Household|pantry|0|bin bags,sacs poubelle,mullbeutel
+Bin bags|Household|pantry|0|bin bags,sacs poubelle,mullbeutel,trash bags,freezer bags,food bags,gefrierbeutel,sacs congelation,cling film,aluminium foil,alufolie,papier alu
 `;
   function norm(s) {
     return String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
@@ -301,9 +305,12 @@ Bin bags|Household|pantry|0|bin bags,sacs poubelle,mullbeutel
     ["image", ["image", "image url", "picture", "photo", "bild", "img", "thumbnail"]],
     ["best_before", ["best before", "best_before", "expiry", "expiry date", "expiration", "expiration date", "expires", "expire", "exp date", "use by", "bbd", "mhd", "haltbar", "haltbarkeit", "ablaufdatum", "verfallsdatum", "dlc", "ddm", "peremption", "date de peremption", "date limite", "date d expiration", "caducidad", "scadenza", "houdbaar"]],
     ["added", ["added", "date added", "added on", "created", "created at", "purchase date", "purchased", "bought", "date d achat", "achat", "ajoute", "ajoute le", "date ajout", "kaufdatum", "hinzugefugt", "erstellt"]],
+    ["percent", ["percentage left", "percent left", "percentage", "percent", "left", "remaining", "rest", "fill level", "reste", "restant"]],
+    ["pieces", ["pieces", "piece", "pcs", "stuck", "stueck", "number of pieces", "nombre de pieces", "portions"]],
+    ["store", ["store", "shop", "supermarket", "magasin", "geschaft", "laden", "price", "prix", "preis", "cost"]],
     ["min_quantity", ["min quantity", "min_quantity", "minimum", "min", "reorder", "reorder level", "low stock", "alert", "seuil", "mindestmenge"]],
     ["category", ["category", "categories", "categorie", "kategorie", "rayon", "type", "group", "groupe", "aisle", "section", "food group", "categoria"]],
-    ["location", ["location", "storage", "storage location", "stored", "stored in", "place", "where", "lieu", "emplacement", "rangement", "stockage", "lagerort", "lagerung", "ort", "standort", "ubicacion"]],
+    ["location", ["location", "shelf", "storage", "storage location", "stored", "stored in", "place", "where", "lieu", "emplacement", "rangement", "stockage", "lagerort", "lagerung", "ort", "standort", "ubicacion"]],
     ["brand", ["brand", "brands", "marque", "marke", "hersteller", "manufacturer", "producer", "marca"]],
     ["unit", ["unit", "units", "unite", "unites", "einheit", "measure", "uom", "mesure", "unidad"]],
     ["quantity", ["quantity", "qty", "quantite", "qte", "amount", "count", "stock", "menge", "anzahl", "bestand", "number", "nombre", "cantidad", "quantita", "aantal", "in stock", "quantity in stock"]],
@@ -335,6 +342,7 @@ Bin bags|Household|pantry|0|bin bags,sacs poubelle,mullbeutel
   function normDate(v) {
     v = String(v || "").trim(); if (!v) return null;
     let m;
+    if (/^\d{5}(\.\d+)?$/.test(v) && +v > 30000 && +v < 80000) { const t = new Date(Math.round((+v - 25569) * 864e5)); return t.toISOString().slice(0, 10); }
     if (/^\d{10,13}$/.test(v)) { const t = new Date(v.length === 13 ? +v : +v * 1000); return isNaN(t) ? null : t.toISOString().slice(0, 10); }
     if ((m = v.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/))) return okDate(m[1], m[2], m[3]);
     if ((m = v.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})\b/))) {
@@ -355,25 +363,31 @@ Bin bags|Household|pantry|0|bin bags,sacs poubelle,mullbeutel
     v = norm(v); if (!v) return null;
     if (/freez|tiefk|gefrier|cong|surgel|vries/.test(v)) return "freezer";
     if (/fridge|refrig|kuhl|frigo|refri|koelkast|nevera|frigor/.test(v)) return "fridge";
-    if (/pantry|vorrat|placard|cellier|schrank|cupboard|cabinet|shelf|garde manger|armoire|epicerie|keller|cellar|kitchen|cuisine|kuche/.test(v)) return "pantry";
+    if (/pantry|vorrat|placard|cellier|schrank|cupboard|cabinet|shelf|garde manger|armoire|epicerie|keller|cellar|kitchen|cuisine|kuche|spice|epice|gewurz|beverage|drink|boisson|getrank|bar|counter|basement|cave|regal/.test(v)) return "pantry";
     return null;
   }
   /* Map a foreign category label to ours */
   const CAT_WORDS = [
     ["Frozen", /frozen|freez|surgel|congel|tiefk|gefrier|glace|ice cream/],
-    ["Household", /household|cleaning|menage|entretien|haushalt|hygiene|toilet|drogerie|non food|nonfood|paper|papier/],
+    ["Household", /household|cleaning|menage|entretien|haushalt|hygiene|toilet|drogerie|non food|nonfood|nicht lebensmittel|paper|papier/],
     ["Drinks", /drink|beverage|boisson|getrank|bier|beer|wine|vin|wein|alcohol|alcool|juice|jus|water|eau|coffee|cafe|kaffee|tea|the |tee/],
     ["Dairy", /dairy|laitier|cremerie|milch|molkerei|fromage|cheese|kase|egg|oeuf|eier|yog|lait|milk|butter|beurre/],
     ["Meat & fish", /meat|viande|fleisch|fish|poisson|fisch|seafood|mer|poultry|volaille|charcut|wurst|boucher|butcher|traiteur/],
-    ["Bakery", /bak|bread|pain|brot|boulang|patiss|backwar/],
-    ["Produce", /produce|fruit|vegetable|veggie|legume|gemuse|obst|primeur|salad|herb/],
+    ["Bakery", /bak|bread|pain|brot|boulang|patiss|backwar|backerei|backer/],
+    ["Produce", /produce|fruit|frucht|vegetable|veggie|legume|gemuse|obst|primeur|salad|herb/],
     ["Canned & jars", /can|tin|jar|conserve|bocal|konserv|glas|spread|tartin|jam|confiture/],
     ["Spices & sauces", /spice|epice|gewurz|sauce|condiment|herbs and|oil|huile|ol |vinegar|vinaigre|seasoning|assaisonnement/],
-    ["Snacks", /snack|sweet|candy|confis|bonbon|chocolat|choco|biscuit|cookie|chips|apero|susswar|knabber|gateau/],
+    ["Snacks", /snack|sweet|candy|confis|bonbon|chocolat|choco|biscuit|cookie|chips|apero|susswar|sussigk|knabber|gateau|naschere/],
     ["Dry goods", /dry|sec|grocery|epicerie|pasta|pate|rice|riz|grain|cereal|cereale|baking|flour|farine|legumin|nudel|reis|backen|staple|breakfast|petit dej/]
   ];
+  /* Labels that say nothing about the item ("uncategorized") or only hint at it */
+  const CAT_NONE = /nicht zugehorig|uncategor|unassigned|unsorted|no category|sans categorie|other|others|autre|autres|divers|sonstig|misc|general|feinkost|deli/;
+  const CAT_WEAK = [["Dry goods", /lebensmittelschrank|pantry|vorrat|epicerie|placard|grocery|staples/]];
+  function mapCategoryWeak(label) { const l = norm(label); for (const [c, re] of CAT_WEAK) if (re.test(l)) return c; return null; }
   function mapCategory(label) {
     const l = norm(label); if (!l) return null;
+    if (CAT_NONE.test(l)) return null;
+    if (CAT_WEAK.some(([, re]) => re.test(l))) return null;
     const exact = CATS.find(c => norm(c) === l); if (exact) return exact;
     for (const [c, re] of CAT_WORDS) if (re.test(" " + l + " ")) return c;
     return null;
@@ -434,19 +448,30 @@ Bin bags|Household|pantry|0|bin bags,sacs poubelle,mullbeutel
     const get = (r, k) => idx[k] >= 0 ? (r[idx[k]] || "").trim() : "";
     let skipped = 0; const items = [];
     for (const r of body) {
-      let name = get(r, "name").replace(/\s+/g, " ").trim();
+      let name = get(r, "name").replace(/\s+/g, " ").replace(/^'/, "").trim();
       if (!name || /^(total|sum|summe)$/i.test(name)) { skipped++; continue; }
       const brand = get(r, "brand");
       const g = guess(name + (brand ? " " + brand : ""));
-      const q = readQty(get(r, "quantity"), get(r, "unit"));
+      let q = readQty(get(r, "quantity"), get(r, "unit"));
+      const pcsRaw = get(r, "pieces"), pcs = num(pcsRaw);
+      const pct = num(get(r, "percent"));
+      if (idx.pieces >= 0) {
+        // KitchenPal style: Pieces + metric size per item. One piece -> use its size; several -> count pieces.
+        const hasMetric = get(r, "quantity") !== "" && q.unit !== "pcs";
+        if (hasMetric && (!(pcs > 1))) { if (pct > 0 && pct < 100) q = { qty: Math.round(q.qty * pct / 100 * 1000) / 1000, unit: q.unit }; }
+        else q = { qty: pcs > 0 ? pcs : 1, unit: "pcs" };
+      }
       const catIn = get(r, "category");
       const mapped = mapCategory(catIn);
-      const cat = g.base ? (mapped && mapped !== g.category && mapped !== "Other" ? mapped : g.category) : (mapped || g.category);
+      const shelfIn = get(r, "location");
+      const shelfHint = /spice|epice|gewurz|beverage|drink|boisson|getrank/.test(norm(shelfIn)) ? mapCategory(shelfIn) : null;
+      const cat = mapped || (g.base ? g.category : null) || shelfHint || mapCategoryWeak(catIn) || g.category;
       const locIn = normLoc(get(r, "location"));
       const location = locIn || (cat === g.category ? g.location : (CAT_LOC[cat] || (catIn && normLoc(catIn)) || "pantry"));
       const minRaw = get(r, "min_quantity");
-      const bc = get(r, "barcode").replace(/\D/g, "");
-      const img = get(r, "image");
+      let bcRaw = get(r, "barcode"); if (/e\+?\d+$/i.test(bcRaw)) bcRaw = Number(bcRaw.replace(",", ".")).toFixed(0);
+      const bc = bcRaw.replace(/\D/g, "");
+      let img = get(r, "image"); const im = img.match(/^=\s*IMAGE\(\s*"([^"]+)"/i); if (im) img = im[1];
       items.push({ name, brand, qty: q.qty, unit: q.unit, category: cat, location,
         expiry: normDate(get(r, "best_before")), minQty: minRaw && !isNaN(num(minRaw)) ? num(minRaw) : null,
         barcode: bc.length >= 6 ? bc : null, added: normDate(get(r, "added")) || todayIso,
@@ -521,6 +546,6 @@ Bin bags|Household|pantry|0|bin bags,sacs poubelle,mullbeutel
     return seeds;
   }
 
-  const api = { CATS, UNITS, CAT_DAYS, CAT_LOC, FOOD, norm, lookupFood, guess, parseQuantity, mapOFF, groupRows, parseReceipt, toCSV, parseCSV, csvToItems, normDate, matchHeaders, mapCategory, mealIngredients, scoreMeal, dietOk, recipeSeeds, ingredientMatches, titleCase };
+  const api = { CATS, UNITS, CAT_DAYS, CAT_LOC, FOOD, norm, lookupFood, guess, parseQuantity, mapOFF, groupRows, parseReceipt, toCSV, parseCSV, csvToItems, normDate, matchHeaders, mapCategory, lookupFood, mealIngredients, scoreMeal, dietOk, recipeSeeds, ingredientMatches, titleCase };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.KL = api;
 })(typeof window !== "undefined" ? window : globalThis);

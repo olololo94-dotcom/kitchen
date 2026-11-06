@@ -100,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
             registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
                 if (uri == null) { send("csv", ""); return; }
                 io.execute(() -> {
-                    try { send("csv", readText(uri)); }
+                    try { send("csv", readImportFile(uri)); }
                     catch (IOException e) { toast("Couldn't open that file."); send("csv", ""); }
                 });
             });
@@ -368,6 +368,31 @@ public class MainActivity extends AppCompatActivity {
         int n;
         while ((n = in.read(buf)) > 0) bos.write(buf, 0, n);
         return bos.toByteArray();
+    }
+
+    /** CSV text, or an Excel (.xlsx) file converted to CSV text. */
+    private String readImportFile(Uri uri) throws IOException {
+        byte[] data;
+        try (InputStream in = getContentResolver().openInputStream(uri)) {
+            if (in == null) throw new IOException("no stream");
+            data = readAll(in);
+        }
+        if (XlsxReader.isZip(data)) {
+            try { return XlsxReader.toCsv(data); }
+            catch (Exception e) { throw new IOException("Couldn't read that Excel file"); }
+        }
+        return decodeText(data);
+    }
+
+    private static String decodeText(byte[] data) {
+        try {
+            return StandardCharsets.UTF_8.newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(CodingErrorAction.REPORT)
+                    .decode(ByteBuffer.wrap(data)).toString();
+        } catch (CharacterCodingException e) {
+            return new String(data, Charset.forName("windows-1252"));
+        }
     }
 
     /** UTF-8 if valid, otherwise Windows-1252 (Excel on Windows). */
