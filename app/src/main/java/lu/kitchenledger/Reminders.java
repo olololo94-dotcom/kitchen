@@ -83,9 +83,9 @@ public class Reminders extends BroadcastReceiver {
                     long days = Math.round((d.getTime() - today.getTimeInMillis()) / 86_400_000.0);
                     String n = it.optString("n");
                     if (days < 0) expired.add(n);
-                    else if (days == 0) soon.add(n + " (today)");
-                    else if (days == 1) soon.add(n + " (tomorrow)");
-                    else if (days <= warn) soon.add(n + " (" + days + " days)");
+                    else if (days == 0) soon.add(n + " (" + Lang.t(ctx, "today") + ")");
+                    else if (days == 1) soon.add(n + " (" + Lang.t(ctx, "tomorrow") + ")");
+                    else if (days <= warn) soon.add(n + " (" + Lang.f(ctx, "in_days", (int) days) + ")");
                 } catch (Exception ignored) { }
             }
         }
@@ -93,19 +93,20 @@ public class Reminders extends BroadcastReceiver {
         if (soon.isEmpty() && expired.isEmpty()) {
             if (!force) return;
             title = "Kitchen Ledger";
-            text = "Reminders are on. Nothing expires in the next " + warn + " days.";
+            text = Lang.f(ctx, "all_good", warn);
         } else {
-            title = soon.isEmpty() ? expired.size() + " expired item" + (expired.size() == 1 ? "" : "s")
-                    : soon.size() + " item" + (soon.size() == 1 ? "" : "s") + " to use soon";
+            title = soon.isEmpty()
+                    ? (expired.size() == 1 ? Lang.t(ctx, "one_expired") : Lang.f(ctx, "n_expired", expired.size()))
+                    : (soon.size() == 1 ? Lang.t(ctx, "one_soon") : Lang.f(ctx, "n_soon", soon.size()));
             StringBuilder sb = new StringBuilder();
             if (!soon.isEmpty()) sb.append(String.join(", ", soon));
-            if (!expired.isEmpty()) { if (sb.length() > 0) sb.append(". "); sb.append("Expired: ").append(String.join(", ", expired)); }
+            if (!expired.isEmpty()) { if (sb.length() > 0) sb.append(". "); sb.append(Lang.t(ctx, "expired")).append(String.join(", ", expired)); }
             text = sb.toString();
         }
         NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel ch = new NotificationChannel(CHANNEL, "Expiry reminders", NotificationManager.IMPORTANCE_DEFAULT);
-            ch.setDescription("Daily reminder about food that expires soon");
+            NotificationChannel ch = new NotificationChannel(CHANNEL, Lang.t(ctx, "channel_name"), NotificationManager.IMPORTANCE_DEFAULT);
+            ch.setDescription(Lang.t(ctx, "channel_desc"));
             nm.createNotificationChannel(ch);
         }
         Intent open = new Intent(ctx, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP).putExtra("open", "soon");

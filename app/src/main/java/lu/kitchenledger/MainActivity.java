@@ -91,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
                 if (Boolean.TRUE.equals(granted)) launchCamera();
                 else {
-                    toast("Camera permission is needed to take photos. You can allow it in Settings > Apps > Kitchen Ledger.");
+                    toast(Lang.t(this, "camera_needed"));
                     send(imageTarget, "");
                 }
             });
@@ -105,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
                 if (uri == null) { send("csv", ""); return; }
                 io.execute(() -> {
                     try { send("csv", readImportFile(uri)); }
-                    catch (IOException e) { toast("Couldn't open that file."); send("csv", ""); }
+                    catch (IOException e) { toast(Lang.t(this, "file_failed")); send("csv", ""); }
                 });
             });
 
@@ -208,6 +208,9 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @JavascriptInterface
+        public void setLanguage(String lang) { Lang.set(MainActivity.this, lang); }
+
+        @JavascriptInterface
         public void setReminders(String json) { Reminders.setConfig(MainActivity.this, json); }
 
         @JavascriptInterface
@@ -237,7 +240,7 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(() -> {
                 ScanOptions o = new ScanOptions();
                 o.setDesiredBarcodeFormats(ScanOptions.PRODUCT_CODE_TYPES);
-                o.setPrompt("Point the camera at a barcode");
+                o.setPrompt(Lang.t(MainActivity.this, "scan_prompt"));
                 o.setBeepEnabled(beep);
                 o.setOrientationLocked(false);
                 scanLauncher.launch(o);
@@ -329,7 +332,7 @@ public class MainActivity extends AppCompatActivity {
             photoUri = FileProvider.getUriForFile(this, getPackageName() + ".files", f);
             takePicture.launch(photoUri);
         } catch (Exception e) {
-            toast("Couldn't open the camera.");
+            toast(Lang.t(this, "camera_failed"));
             send(imageTarget, "");
         }
     }
@@ -357,21 +360,21 @@ public class MainActivity extends AppCompatActivity {
                                 }
                                 send("ocr", arr.toString());
                             } catch (Exception e) {
-                                send("ocr", "ERR:Couldn't read the receipt.");
+                                send("ocr", "ERR:" + Lang.t(this, "receipt_failed"));
                             }
                             rec.close();
                         })
                         .addOnFailureListener(e -> {
-                            send("ocr", "ERR:Couldn't read the receipt. Try again in better light.");
+                            send("ocr", "ERR:" + Lang.t(this, "receipt_light"));
                             rec.close();
                         });
             } catch (IOException e) {
-                send("ocr", "ERR:Couldn't open that picture.");
+                send("ocr", "ERR:" + Lang.t(this, "picture_open_failed"));
             }
         } else {
             io.execute(() -> {
                 try { send("photo", makeThumb(uri)); }
-                catch (Exception e) { toast("Couldn't use that picture."); send("photo", ""); }
+                catch (Exception e) { toast(Lang.t(this, "picture_failed")); send("photo", ""); }
             });
         }
     }
@@ -474,7 +477,7 @@ public class MainActivity extends AppCompatActivity {
                 if (out == null) throw new IOException("no output");
                 out.write(bytesFor(name, content));
             }
-            send("toast", "Saved to Downloads: " + name);
+            send("toast", Lang.t(this, "saved_downloads") + name);
         } catch (Exception e) {
             shareAsFile(name, content);
         }
@@ -504,9 +507,9 @@ public class MainActivity extends AppCompatActivity {
             i.putExtra(Intent.EXTRA_STREAM, uri);
             i.putExtra(Intent.EXTRA_SUBJECT, name);
             i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            runOnUiThread(() -> startActivity(Intent.createChooser(i, "Save or send " + name)));
+            runOnUiThread(() -> startActivity(Intent.createChooser(i, Lang.t(this, "save_or_send") + name)));
         } catch (Exception e) {
-            toast("Couldn't export the file.");
+            toast(Lang.t(this, "export_failed"));
         }
     }
 }

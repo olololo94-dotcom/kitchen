@@ -159,7 +159,7 @@ nav.tabs .badge{position:absolute;top:5px;left:calc(50% + 6px);min-width:17px;he
 .progress .bar{flex:1;height:6px;border-radius:3px;background:var(--sunk);overflow:hidden}
 .progress .bar i{display:block;height:100%;background:var(--accent);transition:width .3s}
 .progress button{border:0;background:transparent;color:var(--accent);font-weight:700;font-size:13px;padding:4px}
-.toast{display:flex;align-items:center;gap:14px}
+.toast{display:flex;align-items:center;gap:14px;width:max-content;min-width:min(260px,calc(100% - 40px))}
 .toast button{border:0;background:transparent;color:var(--accent-soft);font-weight:800;padding:2px 0;text-transform:uppercase;font-size:13px;letter-spacing:.04em}
 .set-group{display:flex;flex-direction:column;gap:6px}
 .set-title{font:600 11px var(--f-mono);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:6px 2px 0}
@@ -189,7 +189,7 @@ nav.tabs .badge{position:absolute;top:5px;left:calc(50% + 6px);min-width:17px;he
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>Kitchen<span>·</span>Ledger</h1>
+    <div class="brand"><h1 translate="no">Kitchen<span>·</span>Ledger</h1>
       <span class="hdr-btns"><button class="iconbtn" data-act="data" aria-label="Import and export"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg></button>
       <button class="iconbtn" data-act="settings" aria-label="Settings"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></span></div>
     <div class="summary" id="summary"></div>
@@ -202,6 +202,9 @@ nav.tabs .badge{position:absolute;top:5px;left:calc(50% + 6px);min-width:17px;he
 <input type="file" id="fbCsv" accept=".csv,.xlsx,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
 
 <script src="logic.js"></script>
+<script src="i18n.js"></script>
+<script src="lang-de.js"></script>
+<script src="lang-fr.js"></script>
 <script>
 (() => {
 const {CATS,UNITS,CAT_DAYS} = KL;
@@ -237,7 +240,7 @@ const CATICON = {
 };
 
 /* ---------- state ---------- */
-const DEF_SETTINGS={theme:"system",warnDays:3,defaultLoc:"fridge",autoExpiry:true,runOutToList:true,keepScanning:false,beep:true,receiptNames:"english",autoPictures:true,nameSearch:true,reminders:false,remindTime:"18:00",sort:"expiry",group:"place"};
+const DEF_SETTINGS={lang:"auto",theme:"system",warnDays:3,defaultLoc:"fridge",autoExpiry:true,runOutToList:true,keepScanning:false,beep:true,receiptNames:"english",autoPictures:true,nameSearch:true,reminders:false,remindTime:"18:00",sort:"expiry",group:"place"};
 let S = {items:[],shopping:[],barcodes:{},prefs:{diet:"Anything",missing:"3",servings:2},cooked:0,settings:{...DEF_SETTINGS},welcomed:false};
 let ui = {tab:"pantry",q:"",loc:"all",recipes:null,recipeQuery:"",busy:false,recErr:"",pic:null,confirmWipe:false};
 const ST = () => S.settings;
@@ -252,12 +255,19 @@ const daysLeft = e => e ? Math.round((new Date(e+"T00:00:00")-today())/864e5) : 
 const isCount = u => u==="pcs"||u==="pack";
 const fmtQty = (q,u) => { const n=Math.round(q*100)/100; return isCount(u)?`${n}`:`${n} ${u}`; };
 const same = (a,b) => KL.norm(a)===KL.norm(b);
+const money = n => { try{ return Number(n).toLocaleString(I18N.lang==="en"?"en-IE":I18N.lang+"-LU",{style:"currency",currency:"EUR"}); }catch(e){ return "€"+Number(n).toFixed(2); } };
+const fmtDate = d => { try{ return new Date(d+"T00:00:00").toLocaleDateString(I18N.lang==="en"?"en-GB":I18N.lang+"-LU",{day:"numeric",month:"short",year:"numeric"}); }catch(e){ return d; } };
 
 function load(){
   try{ const r=localStorage.getItem(LS); if(r) S=Object.assign(S,JSON.parse(r)); }catch(e){}
   S.settings={...DEF_SETTINGS,...(S.settings||{})};
   if(S.keepScanning!==undefined){ S.settings.keepScanning=!!S.keepScanning; delete S.keepScanning; }
-  applyTheme();
+  applyTheme(); applyLang();
+}
+function applyLang(){
+  const l=ST().lang==="auto"?I18N.autoLang():ST().lang;
+  I18N.setLang(l);
+  try{ if(N&&N.setLanguage) N.setLanguage(I18N.lang); }catch(e){}
 }
 function applyTheme(){ const t=ST().theme; if(t==="light"||t==="dark") document.documentElement.dataset.theme=t; else delete document.documentElement.dataset.theme; }
 let remindTimer=null;
@@ -266,7 +276,7 @@ function syncReminders(){
   remindTimer=setTimeout(()=>{
     if(!N||!N.setReminders) return;
     const [h,m]=(ST().remindTime||"18:00").split(":").map(Number);
-    try{ N.setReminders(JSON.stringify({enabled:!!ST().reminders,hour:h||18,minute:m||0,warnDays:W(),items:S.items.filter(i=>i.expiry).map(i=>({n:i.name,e:i.expiry}))})); }catch(e){}
+    try{ N.setReminders(JSON.stringify({lang:I18N.lang,enabled:!!ST().reminders,hour:h||18,minute:m||0,warnDays:W(),items:S.items.filter(i=>i.expiry).map(i=>({n:i.name,e:i.expiry}))})); }catch(e){}
   },400);
 }
 /* Undo: snapshot the whole state before a change */
@@ -345,7 +355,7 @@ function expTag(i){
   if(d===1) return `<span class="tag warn">tomorrow</span>`;
   if(d<=W()) return `<span class="tag warn">${d}d left</span>`;
   if(d<=30) return `<span class="tag">${d}d left</span>`;
-  return `<span class="tag">${new Date(i.expiry+"T00:00:00").toLocaleDateString(undefined,{month:"short",year:"numeric"})}</span>`;
+  return `<span class="tag" translate="no">${new Date(i.expiry+"T00:00:00").toLocaleDateString(I18N.lang==="en"?"en-GB":I18N.lang+"-LU",{month:"short",year:"numeric"})}</span>`;
 }
 function thumbHTML(it,lg){
   const c=CATICON[it.category]||CATICON.Other, src=it.photo||it.image;
@@ -398,8 +408,8 @@ function vPantry(){
   html+=picProgress();
   if(!items.length) html+=`<div class="empty"><p>${ui.loc==="soon"?`Nothing expires in the next ${W()} days.`:"Nothing matches."}</p></div>`;
   const row=i=>`
-      <div class="item">${thumbHTML(i)}<button class="main" data-edit="${i.id}"><span class="name">${esc(i.name)}</span>
-        <span class="meta">${i.brand?`<span>${esc(i.brand)}</span>`:""}${ST().group==="category"?`<span class="tag">${LOC[i.location]}</span>`:`<span class="tag">${esc(i.category)}</span>`}${expTag(i)}</span></button>
+      <div class="item">${thumbHTML(i)}<button class="main" data-edit="${i.id}"><span class="name" translate="no">${esc(i.name)}</span>
+        <span class="meta">${i.example?`<span class="tag">example</span>`:""}${i.brand?`<span translate="no">${esc(i.brand)}</span>`:""}${ST().group==="category"?`<span class="tag">${LOC[i.location]}</span>`:`<span class="tag">${esc(i.category)}</span>`}${expTag(i)}</span></button>
         <div class="qty"><button data-dec="${i.id}" aria-label="Use some ${esc(i.name)}">−</button><output>${fmtQty(i.qty,i.unit)}${isCount(i.unit)?` <small>${i.unit}</small>`:""}</output><button data-inc="${i.id}" aria-label="Add more ${esc(i.name)}">+</button></div></div>`;
   const gm=ST().group;
   if(gm==="none"){ if(items.length) html+=`<div class="list">${items.map(row).join("")}</div>`; }
@@ -447,8 +457,8 @@ function vRecipes(){
   if(ui.recErr) html+=`<p class="err">${esc(ui.recErr)}</p>`;
   if(ui.recipes&&ui.recipes.length){
     html+=ui.recipes.map((r,ix)=>`<button class="recipe" data-recipe="${ix}"><img src="${esc(r.thumb)}/preview" alt="" loading="lazy">
-      <span class="body"><span class="meta"><span class="tag ${r.missing===0?"ok":""}">${r.have}/${r.total} in stock</span>${r.area?`<span class="tag">${esc(r.area)}</span>`:""}</span>
-      <h3>${esc(r.title)}</h3><span class="note">${r.uses.length?"Uses "+esc(r.uses.slice(0,3).join(", ")):"Needs shopping"}</span>
+      <span class="body"><span class="meta"><span class="tag ${r.missing===0?"ok":""}">${r.have}/${r.total} in stock</span>${r.area?`<span class="tag" translate="no">${esc(r.area)}</span>`:""}</span>
+      <h3 translate="no">${esc(r.title)}</h3><span class="note">${r.uses.length?`<span>Uses</span> <span translate="no">${esc(r.uses.slice(0,3).join(", "))}</span>`:"Needs shopping"}</span>
       <span class="prog"><i style="width:${Math.round(r.have/Math.max(1,r.total)*100)}%"></i></span></span></button>`).join("");
   }
   return html+`</section>`;
@@ -457,9 +467,9 @@ function vRecipes(){
 function vShop(){
   const low=S.items.filter(i=>i.minQty!=null&&i.qty<=i.minQty&&!onList(i.name));
   const open=S.shopping.filter(s=>!s.done), done=S.shopping.filter(s=>s.done);
-  const row=s=>`<div class="shop ${s.done?"done":""}"><input type="checkbox" id="sh-${s.id}" data-toggle="${s.id}" ${s.done?"checked":""}><label for="sh-${s.id}" class="n">${esc(s.name)}${s.qty?` <span class="note">· ${esc(s.qty)}</span>`:""}</label><button class="x" data-delshop="${s.id}" aria-label="Remove ${esc(s.name)}">×</button></div>`;
+  const row=s=>`<div class="shop ${s.done?"done":""}"><input type="checkbox" id="sh-${s.id}" data-toggle="${s.id}" ${s.done?"checked":""}><label for="sh-${s.id}" class="n" translate="no">${esc(s.name)}${s.qty?` <span class="note">· ${esc(s.qty)}</span>`:""}</label><button class="x" data-delshop="${s.id}" aria-label="Remove ${esc(s.name)}">×</button></div>`;
   let html=`<section class="view"><form class="search" id="shopForm"><input id="shopIn" placeholder="Add to shopping list" autocomplete="off"><button class="btn primary" type="submit">Add</button></form>`;
-  if(low.length) html+=`<div class="card"><h3>Running low</h3><p class="note">${low.map(i=>esc(i.name)).join(", ")}</p><button class="btn small" data-act="addLow">Add ${low.length} to list</button></div>`;
+  if(low.length) html+=`<div class="card"><h3>Running low</h3><p class="note" translate="no">${low.map(i=>esc(i.name)).join(", ")}</p><button class="btn small" data-act="addLow">Add ${low.length} to list</button></div>`;
   if(!S.shopping.length) html+=`<div class="empty"><h2>Nothing to buy</h2><p>Items land here when you use them up, or when a recipe needs something you don't have.</p></div>`;
   if(open.length) html+=`<div class="group-title">To buy · ${open.length}</div><div class="list">${open.map(row).join("")}</div>`;
   if(done.length) html+=`<div class="group-title">In the basket · ${done.length}</div><div class="list">${done.map(row).join("")}</div>
@@ -515,7 +525,7 @@ function itemForm(it,title,hint,after){
     <label class="full">Remind me to buy more at or below<input class="field" id="fMin" type="number" step="any" min="0" inputmode="decimal" placeholder="e.g. 1" value="${it.minQty??""}"></label>
     ${it.barcode?`<p class="note full">Barcode <span class="code">${esc(it.barcode)}</span></p>`:""}
     <div class="row full"><button class="btn primary" type="submit">${isNew?"Add to kitchen":"Save"}</button>${!isNew?`<button class="btn ghost" type="button" data-del="${it.id}">Remove</button>`:""}</div>
-    ${!isNew?`<div class="row full"><button class="btn small ghost" type="button" data-act="itemToList" data-id="${it.id}">${onList(it.name)?"On the shopping list ✓":"Add to shopping list"}</button>${it.added?`<span class="note" style="align-self:center">Added ${esc(it.added)}</span>`:""}</div>`:""}
+    ${!isNew?`<div class="row full"><button class="btn small ghost" type="button" data-act="itemToList" data-id="${it.id}">${onList(it.name)?"On the shopping list ✓":"Add to shopping list"}</button>${it.added?`<span class="note" style="align-self:center"><span>Added</span> <span translate="no">${esc(fmtDate(it.added))}</span></span>`:""}</div>`:""}
   </form>`);
   const g=id=>document.getElementById(id);
   const touched={cat:!!it.category&&it.category!=="Other",loc:!isNew||!!it.location,exp:!!it.expiry,unit:!isNew};
@@ -544,7 +554,7 @@ function itemForm(it,title,hint,after){
       if(!touched.cat) g("fCat").value=gs.category;
       if(!touched.loc) g("fLoc").value=gs.location;
       if(!touched.exp) g("fExp").value=autoExp(gs.shelfDays)||"";
-      g("fHint").textContent=`Recognized: ${gs.base} · ${gs.category} · ${LOC[gs.location]}${gs.shelfDays?` · keeps ~${gs.shelfDays} days`:""}`;
+      g("fHint").textContent=`Recognized: ${I18N.food(gs.base)} · ${gs.category} · ${LOC[gs.location]}${gs.shelfDays?` · keeps ~${gs.shelfDays} days`:""}`;
     } else g("fHint").textContent=g("fName").value.trim().length>2?"Not recognized. Search below or set the category yourself.":"";
     refresh();
   }
@@ -559,7 +569,7 @@ function itemForm(it,title,hint,after){
       const prods=await offSearch(q,6);
       if(!g("offBox")||g("fName").value.trim()!==q) return;
       if(!prods.length){ box.innerHTML=""; return; }
-      box.innerHTML=`<p class="note" style="margin-bottom:6px">Matching products</p><div class="results">${prods.map((p,k)=>`<button type="button" class="res" data-k="${k}">${thumbHTML({image:p.image,category:p.category})}<span class="t"><b>${esc(p.name)}</b><span class="note">${esc([p.brand,p.packText].filter(Boolean).join(" · "))}</span></span></button>`).join("")}</div>`;
+      box.innerHTML=`<p class="note" style="margin-bottom:6px">Matching products</p><div class="results">${prods.map((p,k)=>`<button type="button" class="res" data-k="${k}">${thumbHTML({image:p.image,category:p.category})}<span class="t" translate="no"><b>${esc(p.name)}</b><span class="note">${esc([p.brand,p.packText].filter(Boolean).join(" · "))}</span></span></button>`).join("")}</div>`;
       box.querySelectorAll(".res").forEach(b=>b.onclick=()=>{ const p=prods[+b.dataset.k]; fillFrom(p); box.innerHTML=""; });
     }catch(e){ if(g("offBox")) box.innerHTML=""; }
   }
@@ -631,22 +641,22 @@ async function receiptFlow(src){
   showReceipt(r);
 }
 let receiptInfo=null;
-function rName(x){ return ST().receiptNames==="english"&&x.english?x.english:x.name; }
+function rName(x){ return ST().receiptNames==="english"&&x.english?I18N.food(x.english):x.name; }
 function showReceipt(r){
   receiptInfo=r||receiptInfo;
   const total=receiptRows.reduce((a,x)=>a+(x.price||0),0);
   const o=(arr,v,lab)=>arr.map(a=>`<option value="${a}" ${a===v?"selected":""}>${lab?lab[a]:a}</option>`).join("");
   const eng=ST().receiptNames==="english";
-  sheet(`<div class="sheet-head"><h2>${esc(receiptInfo.store||"Receipt")}</h2><button class="x" data-close aria-label="Close">×</button></div>
-    <p class="note">${receiptRows.length} items${receiptInfo.date?` · ${esc(receiptInfo.date)}`:""}${total?` · €${total.toFixed(2)}`:""}. Tap a name to change it. Untick anything you don't want to store.</p>
+  sheet(`<div class="sheet-head"><h2>${receiptInfo.store?`<span translate="no">${esc(receiptInfo.store)}</span>`:"Receipt"}</h2><button class="x" data-close aria-label="Close">×</button></div>
+    <p class="note">${receiptRows.length} items${receiptInfo.date?` · ${esc(fmtDate(receiptInfo.date))}`:""}${total?` · ${money(total)}`:""}. Tap a name to change it. Untick anything you don't want to store.</p>
     <div class="review-head"><div class="seg" role="radiogroup" aria-label="Item names" style="flex:1 1 220px"><label><input type="radio" name="rnames" value="english" ${eng?"checked":""}>Clear names</label><label><input type="radio" name="rnames" value="printed" ${eng?"":"checked"}>As on receipt</label></div>
     <button class="btn small ghost" type="button" data-act="rAll">Select none</button></div>
     <div class="list">${receiptRows.map(x=>`<div class="review"><input type="checkbox" data-keep="${x._id}" checked aria-label="Keep ${esc(rName(x))}">
       <div class="grow"><input class="nm" data-rname="${x._id}" value="${esc(rName(x))}" aria-label="Item name">
-      <div class="meta">${x.matched?"":`<span class="tag warn">check</span>`}${eng&&x.english?`<span>${esc(x.original)}</span>`:(x.english?`<span>${esc(x.english)}</span>`:"")}
+      <div class="meta">${x.matched?"":`<span class="tag warn">check</span>`}${eng&&x.english?`<span translate="no">${esc(x.original)}</span>`:(x.english?`<span translate="no">${esc(I18N.food(x.english))}</span>`:"")}
       <select data-rcat="${x._id}" aria-label="Category">${o(CATS,x.category)}</select><select data-rloc="${x._id}" aria-label="Stored in">${o(Object.keys(LOC),x.location,LOC)}</select>
       <span class="tag">${fmtQty(x.qty,x.unit)}${isCount(x.unit)?" "+x.unit:""}</span></div></div>
-      ${x.price!=null?`<span class="note" style="font-variant-numeric:tabular-nums">€${Number(x.price).toFixed(2)}</span>`:""}</div>`).join("")}</div>
+      ${x.price!=null?`<span class="note" style="font-variant-numeric:tabular-nums">${money(x.price)}</span>`:""}</div>`).join("")}</div>
     <button class="btn primary" data-act="saveReceipt">Add ${receiptRows.length} items to kitchen</button>`);
 }
 
@@ -705,12 +715,12 @@ function splitSteps(t){
 }
 function showRecipe(ix){
   const r=ui.recipes[ix]; const missing=r.ings.filter(x=>!x.have);
-  sheet(`<div class="sheet-head"><h2>${esc(r.title)}</h2><button class="x" data-close aria-label="Close">×</button></div>
+  sheet(`<div class="sheet-head"><h2 translate="no">${esc(r.title)}</h2><button class="x" data-close aria-label="Close">×</button></div>
     <img class="hero" src="${esc(r.thumb)}" alt="">
-    <div class="meta"><span class="tag ${r.missing===0?"ok":""}">${r.have}/${r.total} in stock</span>${r.area?`<span class="tag">${esc(r.area)}</span>`:""}${r.category?`<span class="tag">${esc(r.category)}</span>`:""}</div>
-    <div class="card"><h3>Ingredients</h3><div>${r.ings.map(x=>`<div class="ing"><span>${x.have?(x.staple?`<span class="tag">basic</span> `:`<span class="tag ok">have</span> `):`<span class="tag warn">buy</span> `}${esc(x.name)}</span><span class="am">${esc(x.amount)}</span></div>`).join("")}</div>
+    <div class="meta"><span class="tag ${r.missing===0?"ok":""}">${r.have}/${r.total} in stock</span>${r.area?`<span class="tag" translate="no">${esc(r.area)}</span>`:""}${r.category?`<span class="tag" translate="no">${esc(r.category)}</span>`:""}</div>
+    <div class="card"><h3>Ingredients</h3><div>${r.ings.map(x=>`<div class="ing"><span>${x.have?(x.staple?`<span class="tag">basic</span> `:`<span class="tag ok">have</span> `):`<span class="tag warn">buy</span> `}<span translate="no">${esc(x.name)}</span></span><span class="am" translate="no">${esc(x.amount)}</span></div>`).join("")}</div>
     ${missing.length?`<button class="btn small" data-act="missing" data-ix="${ix}">Add ${missing.length} missing to shopping list</button>`:""}</div>
-    <div class="card"><h3>Method</h3><ol class="steps">${r.steps.map(s=>`<li>${esc(s)}</li>`).join("")}</ol>
+    <div class="card"><h3>Method</h3><ol class="steps" translate="no">${r.steps.map(s=>`<li>${esc(s)}</li>`).join("")}</ol>
     ${r.youtube?`<a class="btn small ghost" href="${esc(r.youtube)}" target="_blank" rel="noopener">Watch video</a>`:""}</div>
     <button class="btn primary" data-act="cookedAsk" data-ix="${ix}">I cooked this</button>`);
 }
@@ -721,7 +731,7 @@ function cookedSheet(ix){
   const def=u=>{ const it=u.it; if(isCount(it.unit)) return Math.min(it.qty,1); const pq=KL.parseQuantity(u.ing.amount); if(pq&&pq.unit===it.unit) return Math.min(it.qty,pq.qty); if(pq&&pq.unit==="g"&&it.unit==="kg") return Math.min(it.qty,pq.qty/1000); if(pq&&pq.unit==="ml"&&it.unit==="l") return Math.min(it.qty,pq.qty/1000); return it.qty; };
   sheet(`<div class="sheet-head"><h2>What did you use?</h2><button class="x" data-close aria-label="Close">×</button></div>
     <p class="note">These amounts come out of your kitchen. Anything used up goes on the shopping list.</p>
-    ${uniq.length?`<div class="list">${uniq.map(u=>`<div class="review">${thumbHTML(u.it)}<div class="grow"><b>${esc(u.it.name)}</b><div class="meta">recipe: ${esc(u.ing.amount||"some")} · you have ${fmtQty(u.it.qty,u.it.unit)}${isCount(u.it.unit)?" "+u.it.unit:""}</div></div><input class="field" style="width:84px" type="number" step="any" min="0" inputmode="decimal" data-use="${u.it.id}" value="${Math.round(def(u)*1000)/1000}" aria-label="Amount of ${esc(u.it.name)} used"></div>`).join("")}</div>`:`<p class="note">None of your items were matched to this recipe.</p>`}
+    ${uniq.length?`<div class="list">${uniq.map(u=>`<div class="review">${thumbHTML(u.it)}<div class="grow"><b translate="no">${esc(u.it.name)}</b><div class="meta"><span>Recipe:</span> <span translate="no">${esc(u.ing.amount||"–")}</span> · <span>You have</span> <span translate="no">${fmtQty(u.it.qty,u.it.unit)}</span>${isCount(u.it.unit)?" <span>"+u.it.unit+"</span>":""}</div></div><input class="field" style="width:84px" type="number" step="any" min="0" inputmode="decimal" data-use="${u.it.id}" value="${Math.round(def(u)*1000)/1000}" aria-label="Amount of ${esc(u.it.name)} used"></div>`).join("")}</div>`:`<p class="note">None of your items were matched to this recipe.</p>`}
     <button class="btn primary" data-act="cookedDo">Done</button>`);
 }
 
@@ -826,7 +836,7 @@ function showImport(){
   const unknown=items.filter(i=>i.category==="Other").length;
   box.innerHTML=`<p class="note"><b>${items.length} items</b> ready${skipped?`, ${skipped} empty rows skipped`:""}.</p>
     ${cols.length?`<div class="meta">${cols.map(([f,h])=>`<span class="tag ok">${esc(h)} → ${LBL[f]||f}</span>`).join("")}</div>`:""}
-    <div class="list">${items.slice(0,6).map(i=>`<div class="review">${thumbHTML(i)}<div class="grow"><b>${esc(i.name)}</b><div class="meta"><span class="tag">${esc(i.category)}</span><span class="tag">${LOC[i.location]}</span><span class="tag">${fmtQty(i.qty,i.unit)}${isCount(i.unit)?" "+i.unit:""}</span>${i.expiry?`<span class="tag">${esc(i.expiry)}</span>`:""}</div></div></div>`).join("")}</div>
+    <div class="list">${items.slice(0,6).map(i=>`<div class="review">${thumbHTML(i)}<div class="grow"><b translate="no">${esc(i.name)}</b><div class="meta"><span class="tag">${esc(i.category)}</span><span class="tag">${LOC[i.location]}</span><span class="tag">${fmtQty(i.qty,i.unit)}${isCount(i.unit)?" "+i.unit:""}</span>${i.expiry?`<span class="tag">${esc(i.expiry)}</span>`:""}</div></div></div>`).join("")}</div>
     ${items.length>6?`<p class="note">and ${items.length-6} more.</p>`:""}
     ${unknown?`<p class="note">${unknown} items couldn't be sorted into a category, so they go under Other. You can change them after importing.</p>`:""}
     <div class="seg" role="radiogroup"><label><input type="radio" name="imode" value="merge" checked>Add to my kitchen</label><label><input type="radio" name="imode" value="replace">Replace everything</label></div>
@@ -848,7 +858,8 @@ function settingsSheet(){
   const sel=(k,label,opts,sub)=>`<label class="set"><span class="lbl">${label}${sub?`<small>${sub}</small>`:""}</span><select data-set="${k}">${opts.map(([v,l])=>`<option value="${v}" ${String(st[k])===String(v)?"selected":""}>${l}</option>`).join("")}</select></label>`;
   const btn=(act,label,sub,cls)=>`<button class="set ${cls||""}" data-act="${act}"><span class="lbl">${label}${sub?`<small>${sub}</small>`:""}</span><span class="chev">›</span></button>`;
   const missing=S.items.filter(i=>!i.image&&!i.photo).length;
-  const examples=S.items.filter(i=>/\(example\)$/.test(i.name)).length;
+  const isEx=i=>i.example||/\(example\)$/.test(i.name);
+  const examples=S.items.filter(isEx).length;
   const ver=N&&N.appVersion?N.appVersion():"";
   sheet(`<div class="sheet-head"><h2>Settings</h2><button class="x" data-close aria-label="Close">×</button></div>
   <div class="set-group"><div class="set-title">Kitchen</div><div class="set-list">
@@ -873,6 +884,7 @@ function settingsSheet(){
     ${btn("findPics","Find missing pictures now",missing?`${missing} items without a picture`:"Every item has a picture")}
   </div></div>
   <div class="set-group"><div class="set-title">Appearance</div><div class="set-list">
+    <label class="set"><span class="lbl">Language</span><select data-set="lang">${[["auto","Same as phone"],["en","English"],["de","Deutsch"],["fr","Français"]].map(([v,l])=>`<option value="${v}" ${st.lang===v?"selected":""} ${v==="auto"?"":'translate="no"'}>${l}</option>`).join("")}</select></label>
     ${sel("theme","Theme",[["system","Same as phone"],["light","Light"],["dark","Dark"]])}
   </div></div>
   <div class="set-group"><div class="set-title">Your data</div><div class="set-list">
@@ -889,6 +901,7 @@ function onSetting(t){
   if(k==="warnDays") v=Number(v);
   S.settings[k]=v;
   if(k==="theme") applyTheme();
+  if(k==="lang"){ applyLang(); save(); location.reload(); return; }
   if(k==="reminders"&&v){
     if(!N){ S.settings.reminders=false; toast("Reminders work in the Android app"); }
     else if(N.requestNotifications) nativeCall("notif",()=>N.requestNotifications()).then(ok=>{ if(ok!=="1"){ S.settings.reminders=false; save(); toast("Notifications are blocked. Allow them in Android settings for Kitchen Ledger."); } else toast(`Reminder set for ${ST().remindTime} every day`); if(document.querySelector(".set-list")) settingsSheet(); });
@@ -936,7 +949,7 @@ document.addEventListener("click",async e=>{
     if(!d||d.app!=="KitchenLedger"||!d.state){ toast("That isn't a Kitchen Ledger backup file"); return; }
     snapshot(); S=Object.assign({items:[],shopping:[],barcodes:{}},d.state); S.settings={...DEF_SETTINGS,...(S.settings||{})}; applyTheme(); closeSheet(); commit(); toast(`Backup restored: ${S.items.length} items`,true);
   }
-  else if(a==="delExamples"){ snapshot(); S.items=S.items.filter(i=>!/\(example\)$/.test(i.name)); closeSheet(); commit(); toast("Example items removed",true); }
+  else if(a==="delExamples"){ snapshot(); S.items=S.items.filter(i=>!(i.example||/\(example\)$/.test(i.name))); closeSheet(); commit(); toast("Example items removed",true); }
   else if(a==="wipe"){ ui.confirmWipe=true; settingsSheet(); }
   else if(a==="wipeNo"){ ui.confirmWipe=false; settingsSheet(); }
   else if(a==="wipeYes"){ snapshot(); S.items=[]; S.shopping=[]; ui.confirmWipe=false; closeSheet(); commit(); toast("Everything deleted",true); }
@@ -944,7 +957,7 @@ document.addEventListener("click",async e=>{
   else if(a==="itemToList"){ const it=S.items.find(i=>i.id===t.dataset.id); if(it){ toList(it.name); commit(); t.textContent="On the shopping list ✓"; } }
   else if(a==="demo"){
     const ex=[["Whole milk","Luxlait",1,"l",4],["Eggs","",6,"pcs",12],["Spinach","",200,"g",2],["Chicken breast","",400,"g",1],["Spaghetti","",500,"g",300],["Chopped tomatoes","",2,"pcs",500],["Onions","",3,"pcs",20],["Garlic","",1,"pcs",40],["Frozen peas","",450,"g",180],["Parmesan","",150,"g",25],["Potatoes","",1.5,"kg",21]];
-    ex.forEach(([name,brand,qty,unit,d])=>{ const gs=KL.guess(name); addItem({name:name+" (example)",brand,qty,unit,category:gs.category,location:gs.location,base:gs.base,expiry:addDays(d)}); });
+    ex.forEach(([name,brand,qty,unit,d])=>{ const gs=KL.guess(name); addItem({example:true,name:(I18N.food(gs.base)||name),brand,qty,unit,category:gs.category,location:gs.location,base:gs.base,expiry:addDays(d)}); });
     commit(); toast("Example items loaded. Remove them any time.");
   }
   else if(a==="findRecipes"){ readPrefs(); save(); findRecipes(); }
@@ -1012,7 +1025,7 @@ function readPrefs(){ const g=id=>document.getElementById(id); if(!g("pDiet")) r
 /* Android back button */
 window.onBack=()=>{ if(layer.innerHTML){ closeSheet(); return true; } if(ui.tab!=="pantry"){ ui.tab="pantry"; render(); return true; } return false; };
 
-load(); render();
+load(); I18N.start(); render();
 syncReminders();
 try{ if(N&&N.takeOpen&&N.takeOpen()==="soon"){ ui.loc="soon"; render(); } }catch(e){}
 setTimeout(()=>enrichItems(),2500);
