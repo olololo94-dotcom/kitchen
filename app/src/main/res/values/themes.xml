@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <color name="kl_bg">#F3F5F1</color>
+    <color name="kl_surface">#FFFFFF</color>
+    <color name="kl_accent">#2F6B4F</color>
+    <style name="Theme.KitchenLedger" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/kl_accent</item>
+        <item name="colorPrimaryDark">@color/kl_bg</item>
+        <item name="colorAccent">@color/kl_accent</item>
+        <item name="android:windowBackground">@color/kl_bg</item>
+        <item name="android:statusBarColor">@color/kl_bg</item>
+        <item name="android:navigationBarColor">@color/kl_surface</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
+    </style>
+</resources>

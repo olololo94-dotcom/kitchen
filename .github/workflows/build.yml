@@ -1,0 +1,54 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # If the project was uploaded as a zip, unpack it first
+      - name: Unpack uploaded zip
+        run: |
+          if [ ! -f settings.gradle ] && ls *.zip >/dev/null 2>&1; then
+            unzip -o -q "$(ls *.zip | head -1)" -d _unz
+            src="_unz"; [ -f _unz/KitchenLedger/settings.gradle ] && src="_unz/KitchenLedger"
+            cp -r "$src"/. .
+          fi
+          test -f settings.gradle
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build
+        run: gradle assembleRelease --no-daemon --stacktrace
+
+      - name: Rename APK
+        run: cp app/build/outputs/apk/release/app-release.apk KitchenLedger.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KitchenLedger-apk
+          path: KitchenLedger.apk
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Kitchen Ledger 1.0.${{ github.run_number }}
+          body: Tap KitchenLedger.apk below to download and install.
+          files: KitchenLedger.apk
+          make_latest: true
