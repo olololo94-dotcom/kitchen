@@ -49,34 +49,39 @@ function check(cond, msg) { console.log((cond ? "PASS " : "FAIL ") + msg); if (!
 
   // edits both ways
   B.S.items.find(i => i.id === "i1").qty = 0.5;
-  B.S.shopping[0].done = true;
+  B.S.shopping[0].done = true; B.sync.stamp();
   await B.sync.syncNow(); await A.sync.syncNow();
   check(A.S.items.find(i => i.id === "i1").qty === 0.5, "A sees B's quantity change");
   check(A.S.shopping[0].done === true, "A sees B ticked the shopping item");
 
   // delete on A
-  A.S.items = A.S.items.filter(i => i.id !== "b1");
+  A.S.items = A.S.items.filter(i => i.id !== "b1"); A.sync.stamp();
   await A.sync.syncNow(); await B.sync.syncNow();
   check(!B.S.items.some(i => i.id === "b1"), "B sees A's deletion");
 
   // simultaneous edits on different items
-  A.S.items.find(i => i.id === "i1").qty = 2;
-  B.S.items.find(i => i.id === "i2").qty = 250;
+  A.S.items.find(i => i.id === "i1").qty = 2; A.sync.stamp();
+  B.S.items.find(i => i.id === "i2").qty = 250; B.sync.stamp();
   await A.sync.syncNow(); await B.sync.syncNow(); await A.sync.syncNow();
   check(A.S.items.find(i => i.id === "i2").qty === 250 && B.S.items.find(i => i.id === "i1").qty === 2, "simultaneous edits on different items both survive");
 
   // same item edited on both: newer wins, nobody crashes
-  A.S.items.find(i => i.id === "i1").name = "Milk A";
-  await sleep(20);
-  B.S.items.find(i => i.id === "i1").name = "Milk B";
+  A.S.items.find(i => i.id === "i1").name = "Milk A"; A.sync.stamp();
+  await sleep(50);
+  B.S.items.find(i => i.id === "i1").name = "Milk B"; B.sync.stamp();
   await A.sync.syncNow(); await B.sync.syncNow(); await A.sync.syncNow();
   const na = A.S.items.find(i => i.id === "i1").name, nb = B.S.items.find(i => i.id === "i1").name;
-  check(na === nb, "same-item conflict settles on one value on both phones: " + na);
+  check(na === nb && na === "Milk B", "same item changed on both phones: the later change wins on both: " + na + " / " + nb);
 
   // nothing changed -> nothing written
-  const before = JSON.stringify(A.S);
+  const data = d => JSON.stringify({ i: d.S.items, s: d.S.shopping, b: d.S.barcodes });
+  const before = data(A), baseBefore = JSON.stringify(A.S.sync.base);
   await A.sync.syncNow();
-  check(JSON.stringify(A.S) === before, "idle sync changes nothing");
+  check(data(A) === before && JSON.stringify(A.S.sync.base) === baseBefore, "idle sync changes and uploads nothing");
+  // an item added on B while A is "offline" arrives later
+  B.S.items.push({ id: "b2", name: "Butter", qty: 1, unit: "pcs", category: "Dairy", location: "fridge" }); B.sync.stamp();
+  await B.sync.syncNow(); await A.sync.syncNow();
+  check(A.S.items.some(i => i.id === "b2"), "new item from B arrives on A");
 
   // wrong code
   const C = makeDevice("C");

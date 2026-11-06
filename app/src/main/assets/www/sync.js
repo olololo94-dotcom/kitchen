@@ -27,6 +27,23 @@
     return (S[col] || []).map(x => [x.id, x]);
   }
   function stripLocal(col, v) { if (col !== "items") return v; const o = { ...v }; delete o.picChecked; delete o.offChecked; return o; }
+  function contentHash(col, v) { const o = { ...stripLocal(col, v) }; delete o._mod; return hash(JSON.stringify(o)); }
+  /* Stamp the time of every local edit, so the newer edit wins when two phones change the same thing */
+  let seen = null;
+  function stamp() {
+    if (!app) return;
+    const S = app.getS(), now = Date.now(), first = !seen;
+    seen = seen || {};
+    for (const col of COLS) {
+      const m = seen[col] = seen[col] || {};
+      for (const [id, v] of entries(S, col)) {
+        if (!v || typeof v !== "object") continue;
+        const h = contentHash(col, v);
+        if (m[id] !== h) { if (!first || !v._mod) v._mod = first ? (v._mod || 0) : now; m[id] = h; }
+      }
+    }
+  }
+  function markSeen(col, id, v) { if (seen) { seen[col] = seen[col] || {}; seen[col][id] = contentHash(col, v); } }
 
   /* ---------- sign-in ---------- */
   async function token() {
@@ -80,10 +97,11 @@
   }
 
   /* ---------- sync ---------- */
-  function schedule(ms) { if (!enabled || !app || !app.getS().sync) return; clearTimeout(timer); timer = setTimeout(() => syncNow(), ms == null ? 1500 : ms); }
+  function schedule(ms) { if (!enabled || !app || !app.getS().sync) return; stamp(); clearTimeout(timer); timer = setTimeout(() => syncNow(), ms == null ? 1500 : ms); }
   async function syncNow(force) {
     if (!enabled || !app) return;
     const S0 = app.getS(); if (!S0.sync || !S0.sync.hid) return;
+    stamp();
     if (busy) { again = true; return; }
     if (navigator.onLine === false) { status = { state: "offline", error: "" }; return; }
     busy = true; status = { state: "syncing", error: "" };
@@ -126,14 +144,14 @@
         const lmod = local && local._mod || 0;
         if (localChanged && !sy.joining && lmod > rmod) continue; // our newer edit wins, push sends it
         if (del) {
-          if (local) { removeLocal(S, col, id); changed = true; }
+          if (local) { removeLocal(S, col, id); if (seen && seen[col]) delete seen[col][id]; changed = true; }
           delete sy.base[col][id];
         } else {
           let v; try { v = JSON.parse(rjson); } catch (e) { continue; }
           if (!v) continue;
           if (local && col === "items") { if (local.picChecked) v.picChecked = local.picChecked; if (local.offChecked) v.offChecked = local.offChecked; }
           if (sy.joining && local && localChanged) { continue; } // when joining, keep local copy and push it
-          if (!local || hash(JSON.stringify(stripLocal(col, local))) !== hash(rjson)) { putLocal(S, col, id, v); changed = true; }
+          if (!local || hash(JSON.stringify(stripLocal(col, local))) !== hash(rjson)) { putLocal(S, col, id, v); markSeen(col, id, v); changed = true; }
           sy.base[col][id] = hash(rjson);
         }
       }
@@ -153,9 +171,10 @@
         const clean = stripLocal(col, v);
         const json = JSON.stringify(clean), h = hash(json);
         if (sy.base[col][id] === h) continue;
-        if (typeof v === "object") v._mod = now;
+        if (typeof v === "object" && !v._mod) v._mod = now;
         const json2 = JSON.stringify(stripLocal(col, v));
-        writes.push({ col, id, h: hash(json2), w: doc(hid, col, id, { data: { stringValue: json2 }, mod: { integerValue: String(now) }, del: { booleanValue: false }, by: { stringValue: dev } }) });
+        const mod = (v && v._mod) || now;
+        writes.push({ col, id, h: hash(json2), w: doc(hid, col, id, { data: { stringValue: json2 }, mod: { integerValue: String(mod) }, del: { booleanValue: false }, by: { stringValue: dev } }) });
       }
       for (const id of Object.keys(sy.base[col])) {
         if (seen.has(id)) continue;
@@ -205,5 +224,5 @@
     schedule(500);
   }
 
-  window.KLSync = { enabled, start, schedule, syncNow, create, join, leave, fmtCode, cleanCode, get status() { return status; } };
+  window.KLSync = { enabled, start, schedule, syncNow, stamp, create, join, leave, fmtCode, cleanCode, get status() { return status; } };
 })();
