@@ -118,6 +118,10 @@ nav.tabs .badge{position:absolute;top:5px;left:calc(50% + 6px);min-width:17px;he
 .scrim{position:fixed;inset:0;z-index:30;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--bg);width:100%;max-width:640px;max-height:92vh;overflow-y:auto;border-radius:20px 20px 0 0;padding:8px 16px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px;animation:up .22s ease-out}
 @keyframes up{from{transform:translateY(30px);opacity:.6}}
+.sheet>*{flex-shrink:0}
+.sheet{-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.sheet .stick{position:sticky;bottom:calc(-20px - env(safe-area-inset-bottom,0px));margin:0 -16px calc(-20px - env(safe-area-inset-bottom,0px));padding:12px 16px calc(14px + env(safe-area-inset-bottom,0px));background:linear-gradient(to bottom,transparent,var(--bg) 14px);z-index:2}
+.sheet .stick .btn{width:100%}
 .grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:4px auto 2px;flex:none}
 .sheet-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -657,7 +661,7 @@ function showReceipt(r){
       <select data-rcat="${x._id}" aria-label="Category">${o(CATS,x.category)}</select><select data-rloc="${x._id}" aria-label="Stored in">${o(Object.keys(LOC),x.location,LOC)}</select>
       <span class="tag">${fmtQty(x.qty,x.unit)}${isCount(x.unit)?" "+x.unit:""}</span></div></div>
       ${x.price!=null?`<span class="note" style="font-variant-numeric:tabular-nums">${money(x.price)}</span>`:""}</div>`).join("")}</div>
-    <button class="btn primary" data-act="saveReceipt">Add ${receiptRows.length} items to kitchen</button>`);
+    <div class="stick"><button class="btn primary" data-act="saveReceipt">Add ${receiptRows.length} items to kitchen</button></div>`);
 }
 
 /* recipes */
