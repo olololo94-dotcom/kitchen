@@ -275,49 +275,184 @@ Bin bags|Household|pantry|0|bin bags,sacs poubelle,mullbeutel
   }
   function parseCSV(text) {
     text = String(text).replace(/^﻿/, "");
-    const first = text.split(/\r?\n/)[0] || "";
-    const delim = (first.match(/;/g) || []).length > (first.match(/,/g) || []).length ? ";" : (first.includes("\t") ? "\t" : ",");
+    let forced = null;
+    const sm = text.match(/^\s*"?sep=(.)"?\s*\r?\n/i);
+    if (sm) { forced = sm[1]; text = text.slice(sm[0].length); }
+    const sampleLines = text.split(/\r?\n/).filter(l => l.trim()).slice(0, 6);
+    const score = d => { const counts = sampleLines.map(l => l.split(d).length - 1); const min = Math.min(...counts); return min > 0 ? min * 10 + (counts.every(c => c === counts[0]) ? 5 : 0) : 0; };
+    let delim = forced || [",", ";", "\t", "|"].sort((x, y) => score(y) - score(x))[0];
+    if (!forced && score(delim) === 0) delim = ",";
     const rows = []; let row = [], cell = "", q = false;
     for (let i = 0; i < text.length; i++) {
       const c = text[i];
       if (q) { if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; continue; }
-      if (c === '"') q = true;
+      if (c === '"' && cell.trim() === "") { q = true; cell = ""; }
       else if (c === delim) { row.push(cell); cell = ""; }
       else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; row.push(cell); cell = ""; if (row.some(x => x.trim() !== "")) rows.push(row); row = []; }
       else cell += c;
     }
     row.push(cell); if (row.some(x => x.trim() !== "")) rows.push(row);
-    return rows;
+    return rows.map(r => r.map(c => c.trim()));
   }
-  const ALIAS = {name:["name","item","product","article","artikel","produit","nom"],brand:["brand","marke","marque"],quantity:["quantity","qty","amount","menge","anzahl","quantite"],unit:["unit","einheit","unite"],category:["category","kategorie","categorie"],location:["location","stored","lagerort","ort","emplacement"],best_before:["best_before","expiry","expires","mhd","haltbar","date","dlc","peremption"],min_quantity:["min_quantity","min","minimum","reorder"],barcode:["barcode","ean","gtin","code"],added:["added","hinzugefugt","ajoute"],image:["image","picture","photo","bild"]};
+
+  /* Header words per field (EN, FR, DE, NL, ES, IT). Order matters: specific fields are claimed first, the name last. */
+  const FIELDS = [
+    ["barcode", ["barcode", "bar code", "ean", "ean13", "gtin", "upc", "code barre", "code barres", "codebarre", "strichcode", "barcode number"]],
+    ["image", ["image", "image url", "picture", "photo", "bild", "img", "thumbnail"]],
+    ["best_before", ["best before", "best_before", "expiry", "expiry date", "expiration", "expiration date", "expires", "expire", "exp date", "use by", "bbd", "mhd", "haltbar", "haltbarkeit", "ablaufdatum", "verfallsdatum", "dlc", "ddm", "peremption", "date de peremption", "date limite", "date d expiration", "caducidad", "scadenza", "houdbaar"]],
+    ["added", ["added", "date added", "added on", "created", "created at", "purchase date", "purchased", "bought", "date d achat", "achat", "ajoute", "ajoute le", "date ajout", "kaufdatum", "hinzugefugt", "erstellt"]],
+    ["min_quantity", ["min quantity", "min_quantity", "minimum", "min", "reorder", "reorder level", "low stock", "alert", "seuil", "mindestmenge"]],
+    ["category", ["category", "categories", "categorie", "kategorie", "rayon", "type", "group", "groupe", "aisle", "section", "food group", "categoria"]],
+    ["location", ["location", "storage", "storage location", "stored", "stored in", "place", "where", "lieu", "emplacement", "rangement", "stockage", "lagerort", "lagerung", "ort", "standort", "ubicacion"]],
+    ["brand", ["brand", "brands", "marque", "marke", "hersteller", "manufacturer", "producer", "marca"]],
+    ["unit", ["unit", "units", "unite", "unites", "einheit", "measure", "uom", "mesure", "unidad"]],
+    ["quantity", ["quantity", "qty", "quantite", "qte", "amount", "count", "stock", "menge", "anzahl", "bestand", "number", "nombre", "cantidad", "quantita", "aantal", "in stock", "quantity in stock"]],
+    ["notes", ["notes", "note", "comment", "comments", "remarque", "notiz", "description"]],
+    ["name", ["name", "item", "item name", "items", "product", "product name", "products", "article", "articles", "artikel", "produit", "nom", "nom du produit", "libelle", "designation", "bezeichnung", "produktname", "ingredient", "food", "title", "titre", "nombre", "naam", "prodotto"]]
+  ];
+  function matchHeaders(head) {
+    const H = head.map(h => norm(h).replace(/_/g, " "));
+    const idx = {}; const used = new Set();
+    for (const [f] of FIELDS) idx[f] = -1;
+    // pass 1: exact header match; pass 2: header contains the word as a whole token
+    for (const pass of [1, 2]) {
+      for (const [f, words] of FIELDS) {
+        if (idx[f] >= 0) continue;
+        for (let i = 0; i < H.length; i++) {
+          if (used.has(i) || !H[i]) continue;
+          const h = H[i];
+          const hit = pass === 1 ? words.includes(h) : words.some(w => w.length >= 3 && (" " + h + " ").includes(" " + w + " "));
+          if (hit) { idx[f] = i; used.add(i); break; }
+        }
+      }
+    }
+    return idx;
+  }
+
+  const MONTHS = { jan: 1, janv: 1, janvier: 1, januar: 1, feb: 2, fev: 2, fevr: 2, fevrier: 2, februar: 2, mar: 3, mars: 3, marz: 3, apr: 4, avr: 4, avril: 4, april: 4, may: 5, mai: 5, jun: 6, juin: 6, juni: 6, jul: 7, juil: 7, juillet: 7, juli: 7, aug: 8, aou: 8, aout: 8, august: 8, sep: 9, sept: 9, septembre: 9, september: 9, oct: 10, okt: 10, octobre: 10, oktober: 10, nov: 11, novembre: 11, november: 11, dec: 12, dez: 12, decembre: 12, dezember: 12, january: 1, february: 2, march: 3, june: 6, july: 7, october: 10, december: 12 };
+  const pad = n => String(n).padStart(2, "0");
+  function okDate(y, m, d) { y = +y; m = +m; d = +d; if (y < 100) y += 2000; if (m < 1 || m > 12 || d < 1 || d > 31 || y < 1990 || y > 2100) return null; return `${y}-${pad(m)}-${pad(d)}`; }
   function normDate(v) {
-    v = (v || "").trim(); if (!v) return null;
-    if (/^\d{4}-\d{2}-\d{2}/.test(v)) return v.slice(0, 10);
-    const m = v.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})$/);
-    if (m) { const y = m[3].length === 2 ? "20" + m[3] : m[3]; return `${y}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`; }
+    v = String(v || "").trim(); if (!v) return null;
+    let m;
+    if (/^\d{10,13}$/.test(v)) { const t = new Date(v.length === 13 ? +v : +v * 1000); return isNaN(t) ? null : t.toISOString().slice(0, 10); }
+    if ((m = v.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/))) return okDate(m[1], m[2], m[3]);
+    if ((m = v.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})\b/))) {
+      let a = +m[1], b = +m[2];
+      if (b > 12 && a <= 12) return okDate(m[3], a, b); // US month/day
+      return okDate(m[3], b, a);                         // European day/month
+    }
+    const n = norm(v);
+    if ((m = n.match(/^(\d{1,2}) ([a-z]+) (\d{2,4})/)) && MONTHS[m[2]]) return okDate(m[3], MONTHS[m[2]], m[1]);
+    if ((m = n.match(/^([a-z]+) (\d{1,2}) (\d{2,4})/)) && MONTHS[m[1]]) return okDate(m[3], MONTHS[m[1]], m[2]);
+    if ((m = n.match(/^[a-z]+ ([a-z]+) (\d{1,2}) (\d{4})/)) && MONTHS[m[1]]) return okDate(m[3], MONTHS[m[1]], m[2]);
+    if ((m = n.match(/^(\d{1,2}) ([a-z]+)$/)) && MONTHS[m[2]]) return okDate(new Date().getFullYear(), MONTHS[m[2]], m[1]);
+    if ((m = n.match(/^([a-z]+) (\d{4})$/)) && MONTHS[m[1]]) return okDate(m[2], MONTHS[m[1]], 1);
+    if ((m = v.match(/^(\d{1,2})[.\/-](\d{4})$/))) return okDate(m[2], m[1], 1);
     return null;
   }
-  function normLoc(v) { v = norm(v); if (/freez|tiefk|gefrier|cong/.test(v)) return "freezer"; if (/fridge|kuhl|frigo|refri/.test(v)) return "fridge"; if (/pantry|vorrat|placard|cellier|schrank/.test(v)) return "pantry"; return null; }
+  function normLoc(v) {
+    v = norm(v); if (!v) return null;
+    if (/freez|tiefk|gefrier|cong|surgel|vries/.test(v)) return "freezer";
+    if (/fridge|refrig|kuhl|frigo|refri|koelkast|nevera|frigor/.test(v)) return "fridge";
+    if (/pantry|vorrat|placard|cellier|schrank|cupboard|cabinet|shelf|garde manger|armoire|epicerie|keller|cellar|kitchen|cuisine|kuche/.test(v)) return "pantry";
+    return null;
+  }
+  /* Map a foreign category label to ours */
+  const CAT_WORDS = [
+    ["Frozen", /frozen|freez|surgel|congel|tiefk|gefrier|glace|ice cream/],
+    ["Household", /household|cleaning|menage|entretien|haushalt|hygiene|toilet|drogerie|non food|nonfood|paper|papier/],
+    ["Drinks", /drink|beverage|boisson|getrank|bier|beer|wine|vin|wein|alcohol|alcool|juice|jus|water|eau|coffee|cafe|kaffee|tea|the |tee/],
+    ["Dairy", /dairy|laitier|cremerie|milch|molkerei|fromage|cheese|kase|egg|oeuf|eier|yog|lait|milk|butter|beurre/],
+    ["Meat & fish", /meat|viande|fleisch|fish|poisson|fisch|seafood|mer|poultry|volaille|charcut|wurst|boucher|butcher|traiteur/],
+    ["Bakery", /bak|bread|pain|brot|boulang|patiss|backwar/],
+    ["Produce", /produce|fruit|vegetable|veggie|legume|gemuse|obst|primeur|salad|herb/],
+    ["Canned & jars", /can|tin|jar|conserve|bocal|konserv|glas|spread|tartin|jam|confiture/],
+    ["Spices & sauces", /spice|epice|gewurz|sauce|condiment|herbs and|oil|huile|ol |vinegar|vinaigre|seasoning|assaisonnement/],
+    ["Snacks", /snack|sweet|candy|confis|bonbon|chocolat|choco|biscuit|cookie|chips|apero|susswar|knabber|gateau/],
+    ["Dry goods", /dry|sec|grocery|epicerie|pasta|pate|rice|riz|grain|cereal|cereale|baking|flour|farine|legumin|nudel|reis|backen|staple|breakfast|petit dej/]
+  ];
+  function mapCategory(label) {
+    const l = norm(label); if (!l) return null;
+    const exact = CATS.find(c => norm(c) === l); if (exact) return exact;
+    for (const [c, re] of CAT_WORDS) if (re.test(" " + l + " ")) return c;
+    return null;
+  }
+  const UNIT_WORDS = { g: ["g", "gr", "gram", "grams", "gramme", "grammes", "gramm"], kg: ["kg", "kilo", "kilos", "kilogram", "kilograms", "kilogramme", "kilogramm"], ml: ["ml", "milliliter", "millilitre", "milliliters", "millilitres"], l: ["l", "lt", "ltr", "liter", "litre", "liters", "litres"], cl: ["cl", "centiliter", "centilitre"], pack: ["pack", "packs", "package", "packages", "packet", "packets", "paquet", "paquets", "packung", "packungen", "box", "boxes", "boite", "boites", "bag", "bags", "sachet", "sachets", "beutel", "carton", "pkg", "pk"], pcs: ["pcs", "pc", "piece", "pieces", "pce", "pces", "unit", "units", "unite", "unites", "item", "items", "x", "stk", "stuck", "st", "each", "ea", "can", "cans", "tin", "tins", "bottle", "bottles", "bouteille", "bouteilles", "flasche", "flaschen", "jar", "jars", "bocal", "bocaux", "glas", "dose", "dosen", "conserve", "pot", "pots", "tube", "tubes", "slice", "slices", "tranche", "tranches", "bunch", "botte", "head", "loaf", "roll", "rolls", "serving", "servings", "portion", "portions"] };
+  function mapUnit(u) {
+    u = norm(u).replace(/\s/g, ""); if (!u) return null;
+    for (const k in UNIT_WORDS) if (UNIT_WORDS[k].includes(u)) return k;
+    return null;
+  }
+  function num(v) { const m = String(v || "").replace(",", ".").match(/-?\d+(\.\d+)?/); return m ? Number(m[0]) : NaN; }
+  function readQty(qCell, uCell) {
+    let qty = num(qCell), unit = mapUnit(uCell);
+    const inline = String(qCell || "").replace(/^[\d\s.,]+/, "").trim();
+    if (!unit && inline) unit = mapUnit(inline) || (parseQuantity(qCell) || {}).unit || null;
+    if (!unit && uCell) { const pq = parseQuantity("1 " + uCell); if (pq) unit = pq.unit; }
+    if (isNaN(qty) || qty < 0) qty = 1;
+    if (unit === "cl") { qty *= 10; unit = "ml"; }
+    if (unit === "g" && qty >= 1000) { qty /= 1000; unit = "kg"; }
+    if (unit === "ml" && qty >= 1000) { qty /= 1000; unit = "l"; }
+    return { qty: Math.round(qty * 1000) / 1000, unit: UNITS.includes(unit) ? unit : "pcs" };
+  }
+  function looksLikeHeader(row) {
+    const idx = matchHeaders(row);
+    return Object.values(idx).filter(i => i >= 0).length >= (row.length === 1 ? 1 : 2) || idx.name >= 0;
+  }
+  function textiness(rows, col) {
+    let t = 0, n = 0;
+    for (const r of rows.slice(0, 30)) { const v = r[col] || ""; if (!v) continue; n++; if (/[a-zA-ZÀ-ÿ]{3,}/.test(v) && !normDate(v) && !/^https?:/.test(v)) t++; }
+    return n ? t / n : 0;
+  }
   function csvToItems(text, todayIso) {
-    const rows = parseCSV(text); if (!rows.length) return { items: [], skipped: 0 };
-    const head = rows[0].map(h => norm(h).replace(/ /g, "_"));
-    const idx = {}; for (const k in ALIAS) idx[k] = head.findIndex(h => ALIAS[k].includes(h));
-    let body = rows.slice(1);
-    if (idx.name < 0) { idx.name = 0; body = rows; }
+    const rows = parseCSV(text); if (!rows.length) return { items: [], skipped: 0, columns: [] };
+    let hi = rows.slice(0, 6).findIndex(looksLikeHeader);
+    let idx, body;
+    if (hi >= 0) { idx = matchHeaders(rows[hi]); body = rows.slice(hi + 1); }
+    else { idx = matchHeaders([]); body = rows; }
+    if (idx.name < 0) {
+      // No recognizable name column: use the most text-like column that isn't claimed
+      const claimed = new Set(Object.values(idx).filter(i => i >= 0));
+      const width = Math.max(...body.slice(0, 30).map(r => r.length));
+      let best = -1, bestScore = 0;
+      for (let c = 0; c < width; c++) { if (claimed.has(c)) continue; const s = textiness(body, c); if (s > bestScore) { bestScore = s; best = c; } }
+      idx.name = best >= 0 ? best : 0;
+    }
+    if (idx.quantity < 0) {
+      // A mostly-numeric unclaimed column is the quantity
+      const claimed = new Set(Object.values(idx).filter(i => i >= 0));
+      const width = Math.max(...body.slice(0, 30).map(r => r.length));
+      for (let c = 0; c < width; c++) {
+        if (claimed.has(c)) continue;
+        const vals = body.slice(0, 30).map(r => r[c] || "").filter(Boolean);
+        if (vals.length && vals.filter(v => /^\d+([.,]\d+)?\s*[a-zA-Z]{0,6}$/.test(v) && !normDate(v)).length / vals.length > 0.8 && vals.every(v => v.replace(/\D/g, "").length < 6)) { idx.quantity = c; break; }
+      }
+    }
+    const headRow = hi >= 0 ? rows[hi] : [];
+    const columns = Object.entries(idx).filter(([, i]) => i >= 0).map(([f, i]) => [f, headRow[i] || ("column " + (i + 1))]);
     const get = (r, k) => idx[k] >= 0 ? (r[idx[k]] || "").trim() : "";
     let skipped = 0; const items = [];
     for (const r of body) {
-      const name = get(r, "name"); if (!name) { skipped++; continue; }
-      const g = guess(name);
-      const unit = (get(r, "unit") || "pcs").toLowerCase();
+      let name = get(r, "name").replace(/\s+/g, " ").trim();
+      if (!name || /^(total|sum|summe)$/i.test(name)) { skipped++; continue; }
+      const brand = get(r, "brand");
+      const g = guess(name + (brand ? " " + brand : ""));
+      const q = readQty(get(r, "quantity"), get(r, "unit"));
       const catIn = get(r, "category");
-      const cat = CATS.find(c => c.toLowerCase() === catIn.toLowerCase()) || g.category;
-      items.push({ name, brand: get(r, "brand"), qty: parseFloat(get(r, "quantity").replace(",", ".")) || 1, unit: UNITS.includes(unit) ? unit : "pcs",
-        category: cat, location: normLoc(get(r, "location")) || (cat === g.category ? g.location : (CAT_LOC[cat] || "pantry")),
-        expiry: normDate(get(r, "best_before")), minQty: get(r, "min_quantity") ? parseFloat(get(r, "min_quantity").replace(",", ".")) : null,
-        barcode: get(r, "barcode") || null, added: normDate(get(r, "added")) || todayIso, image: /^https?:\/\//.test(get(r, "image")) ? get(r, "image") : null, base: g.base });
+      const mapped = mapCategory(catIn);
+      const cat = g.base ? (mapped && mapped !== g.category && mapped !== "Other" ? mapped : g.category) : (mapped || g.category);
+      const locIn = normLoc(get(r, "location"));
+      const location = locIn || (cat === g.category ? g.location : (CAT_LOC[cat] || (catIn && normLoc(catIn)) || "pantry"));
+      const minRaw = get(r, "min_quantity");
+      const bc = get(r, "barcode").replace(/\D/g, "");
+      const img = get(r, "image");
+      items.push({ name, brand, qty: q.qty, unit: q.unit, category: cat, location,
+        expiry: normDate(get(r, "best_before")), minQty: minRaw && !isNaN(num(minRaw)) ? num(minRaw) : null,
+        barcode: bc.length >= 6 ? bc : null, added: normDate(get(r, "added")) || todayIso,
+        image: /^https?:\/\//.test(img) ? img : null, base: g.base });
     }
-    return { items, skipped };
+    return { items, skipped, columns };
   }
 
   /* ---------- recipes ---------- */
@@ -386,6 +521,6 @@ Bin bags|Household|pantry|0|bin bags,sacs poubelle,mullbeutel
     return seeds;
   }
 
-  const api = { CATS, UNITS, CAT_DAYS, CAT_LOC, FOOD, norm, lookupFood, guess, parseQuantity, mapOFF, groupRows, parseReceipt, toCSV, parseCSV, csvToItems, normDate, mealIngredients, scoreMeal, dietOk, recipeSeeds, ingredientMatches, titleCase };
+  const api = { CATS, UNITS, CAT_DAYS, CAT_LOC, FOOD, norm, lookupFood, guess, parseQuantity, mapOFF, groupRows, parseReceipt, toCSV, parseCSV, csvToItems, normDate, matchHeaders, mapCategory, mealIngredients, scoreMeal, dietOk, recipeSeeds, ingredientMatches, titleCase };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.KL = api;
 })(typeof window !== "undefined" ? window : globalThis);

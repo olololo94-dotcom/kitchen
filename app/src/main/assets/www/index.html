@@ -621,7 +621,7 @@ function dataSheet(){
     <div class="card"><h3>Export inventory</h3><p class="note">All ${S.items.length} items as a CSV file for Excel or Google Sheets. It's saved to your Downloads folder.</p>
       <div class="row"><button class="btn primary" data-act="exportCsv" ${S.items.length?"":"disabled"}>Save CSV</button><button class="btn" data-act="shareCsv" ${S.items.length?"":"disabled"}>Share CSV</button></div></div>
     <div class="card"><h3>Import inventory</h3>
-      <p class="note">A CSV with a header row. Recognized columns: <span class="code">name, brand, quantity, unit, category, location, best_before, min_quantity, barcode</span>. Only name is required. Comma or semicolon both work, dates like 12.11.2026 too, and missing categories are filled in automatically.</p>
+      <p class="note">Works with exports from KitchenPal and other apps, in English, French or German. Columns like name, amount, unit, category, storage place, expiry date and barcode are found automatically, and you see what was recognized before anything is added.</p>
       <button class="btn" data-act="importCsv">Choose CSV file</button>
       <div id="importBox"></div></div>
     <p class="note">Your inventory is stored on this phone. Export a CSV now and then as a backup.</p>`);
@@ -630,7 +630,14 @@ function showImport(){
   const box=document.getElementById("importBox"); if(!box) return;
   const {items,skipped}=importPreview;
   if(!items.length){ box.innerHTML=`<p class="err">No items found. Check that the file has a header row with a name column.</p>`; return; }
-  box.innerHTML=`<p class="note"><b>${items.length} items</b> ready${skipped?`, ${skipped} empty rows skipped`:""}: ${items.slice(0,5).map(i=>esc(i.name)).join(", ")}${items.length>5?"…":""}</p>
+  const LBL={name:"Name",brand:"Brand",quantity:"Amount",unit:"Unit",category:"Category",location:"Stored in",best_before:"Best before",added:"Added",min_quantity:"Reminder level",barcode:"Barcode",image:"Picture",notes:"Notes"};
+  const cols=(importPreview.columns||[]).filter(([f])=>f!=="notes");
+  const unknown=items.filter(i=>i.category==="Other").length;
+  box.innerHTML=`<p class="note"><b>${items.length} items</b> ready${skipped?`, ${skipped} empty rows skipped`:""}.</p>
+    ${cols.length?`<div class="meta">${cols.map(([f,h])=>`<span class="tag ok">${esc(h)} → ${LBL[f]||f}</span>`).join("")}</div>`:""}
+    <div class="list">${items.slice(0,6).map(i=>`<div class="review">${thumbHTML(i)}<div class="grow"><b>${esc(i.name)}</b><div class="meta"><span class="tag">${esc(i.category)}</span><span class="tag">${LOC[i.location]}</span><span class="tag">${fmtQty(i.qty,i.unit)}${isCount(i.unit)?" "+i.unit:""}</span>${i.expiry?`<span class="tag">${esc(i.expiry)}</span>`:""}</div></div></div>`).join("")}</div>
+    ${items.length>6?`<p class="note">and ${items.length-6} more.</p>`:""}
+    ${unknown?`<p class="note">${unknown} items couldn't be sorted into a category, so they go under Other. You can change them after importing.</p>`:""}
     <div class="seg" role="radiogroup"><label><input type="radio" name="imode" value="merge" checked>Add to my kitchen</label><label><input type="radio" name="imode" value="replace">Replace everything</label></div>
     <button class="btn primary" data-act="doImport">Import ${items.length} items</button>`;
 }
