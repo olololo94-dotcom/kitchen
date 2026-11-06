@@ -16,10 +16,14 @@
   --f-mono:ui-monospace,"Roboto Mono","DejaVu Sans Mono",monospace;
   --r:14px; color-scheme:light;
 }
-@media (prefers-color-scheme: dark){:root{
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#121816; --surface:#1b2320; --sunk:#232d29; --ink:#e6ede8; --muted:#9aa9a1; --line:#2e3a35;
   --accent:#6cc497; --accent-ink:#0e1a14; --accent-soft:#1f3a2d;
   --warn:#f0b04a; --warn-soft:#3a2c14; --bad:#f07a6e; --bad-soft:#3d1f1c; --ok:#6cc497; --scrim:rgba(0,0,0,.6); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121816; --surface:#1b2320; --sunk:#232d29; --ink:#e6ede8; --muted:#9aa9a1; --line:#2e3a35;
+  --accent:#6cc497; --accent-ink:#0e1a14; --accent-soft:#1f3a2d;
+  --warn:#f0b04a; --warn-soft:#3a2c14; --bad:#f07a6e; --bad-soft:#3d1f1c; --ok:#6cc497; --scrim:rgba(0,0,0,.6); color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%}
 body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-body);-webkit-tap-highlight-color:transparent;overscroll-behavior-y:contain}
@@ -146,6 +150,39 @@ nav.tabs .badge{position:absolute;top:5px;left:calc(50% + 6px);min-width:17px;he
 .seg label{flex:1;text-align:center;padding:8px;border-radius:8px;font-weight:600;font-size:13px;position:relative}
 .seg input{position:absolute;opacity:0;pointer-events:none}
 .seg label:has(input:checked){background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.hdr-btns{display:flex;gap:8px}
+.toolbar{display:flex;gap:8px;align-items:center;margin-top:10px}
+.toolbar .chips{margin-top:0;flex:1;min-width:0}
+.mini{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 10px;font-size:13px;font-weight:600;color:var(--muted);flex:none;max-width:46%}
+.chip .n{opacity:.6;font-variant-numeric:tabular-nums;margin-left:4px}
+.progress{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--muted)}
+.progress .bar{flex:1;height:6px;border-radius:3px;background:var(--sunk);overflow:hidden}
+.progress .bar i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.progress button{border:0;background:transparent;color:var(--accent);font-weight:700;font-size:13px;padding:4px}
+.toast{display:flex;align-items:center;gap:14px}
+.toast button{border:0;background:transparent;color:var(--accent-soft);font-weight:800;padding:2px 0;text-transform:uppercase;font-size:13px;letter-spacing:.04em}
+.set-group{display:flex;flex-direction:column;gap:6px}
+.set-title{font:600 11px var(--f-mono);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:6px 2px 0}
+.set-list{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.set{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-top:1px solid var(--line);min-height:52px;width:100%;background:transparent;border-left:0;border-right:0;border-bottom:0;text-align:left;color:var(--ink)}
+.set:first-child{border-top:0}
+.set .lbl{display:flex;flex-direction:column;gap:2px;min-width:0}
+.set .lbl small{color:var(--muted);font-size:12.5px;line-height:1.35}
+.set select,.set input[type=time]{border:1px solid var(--line);background:var(--sunk);border-radius:8px;padding:6px 8px;max-width:48%;flex:none}
+.set .chev{color:var(--muted);font-size:20px;flex:none}
+.set.danger{color:var(--bad)}
+.tog{appearance:none;-webkit-appearance:none;width:46px;height:28px;border-radius:14px;background:var(--line);position:relative;flex:none;cursor:pointer;transition:background .15s}
+.tog::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:left .15s}
+.tog:checked{background:var(--accent)}
+.tog:checked::after{left:21px}
+.pics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.pics button{border:2px solid transparent;border-radius:12px;padding:0;background:#fff;aspect-ratio:1;overflow:hidden}
+.pics img{width:100%;height:100%;object-fit:contain}
+.welcome{background:var(--accent);color:var(--accent-ink);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:10px}
+.welcome p{margin:0;opacity:.9}
+.welcome .btn{background:var(--accent-ink);color:var(--accent);border-color:transparent}
+.welcome .btn.ghost{background:transparent;color:var(--accent-ink);border-color:color-mix(in srgb,var(--accent-ink) 40%,transparent)}
+.review-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -153,7 +190,8 @@ nav.tabs .badge{position:absolute;top:5px;left:calc(50% + 6px);min-width:17px;he
 <div class="wrap">
   <header>
     <div class="brand"><h1>Kitchen<span>·</span>Ledger</h1>
-      <button class="iconbtn" data-act="data" aria-label="Import and export"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg></button></div>
+      <span class="hdr-btns"><button class="iconbtn" data-act="data" aria-label="Import and export"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg></button>
+      <button class="iconbtn" data-act="settings" aria-label="Settings"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></span></div>
     <div class="summary" id="summary"></div>
   </header>
   <main id="app"></main>
@@ -199,8 +237,12 @@ const CATICON = {
 };
 
 /* ---------- state ---------- */
-let S = {items:[],shopping:[],barcodes:{},prefs:{diet:"Anything",missing:"3",servings:2},cooked:0,keepScanning:false};
-let ui = {tab:"pantry",q:"",loc:"all",recipes:null,recipeQuery:"",busy:false,recErr:""};
+const DEF_SETTINGS={theme:"system",warnDays:3,defaultLoc:"fridge",autoExpiry:true,runOutToList:true,keepScanning:false,beep:true,receiptNames:"english",autoPictures:true,nameSearch:true,reminders:false,remindTime:"18:00",sort:"expiry",group:"place"};
+let S = {items:[],shopping:[],barcodes:{},prefs:{diet:"Anything",missing:"3",servings:2},cooked:0,settings:{...DEF_SETTINGS},welcomed:false};
+let ui = {tab:"pantry",q:"",loc:"all",recipes:null,recipeQuery:"",busy:false,recErr:"",pic:null,confirmWipe:false};
+const ST = () => S.settings;
+const W = () => Number(ST().warnDays)||3;
+const autoExp = days => ST().autoExpiry && days ? addDays(days) : null;
 const uid = () => Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
 const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const today = () => { const d=new Date(); d.setHours(0,0,0,0); return d; };
@@ -211,9 +253,28 @@ const isCount = u => u==="pcs"||u==="pack";
 const fmtQty = (q,u) => { const n=Math.round(q*100)/100; return isCount(u)?`${n}`:`${n} ${u}`; };
 const same = (a,b) => KL.norm(a)===KL.norm(b);
 
-function load(){ try{ const r=localStorage.getItem(LS); if(r) S=Object.assign(S,JSON.parse(r)); }catch(e){} }
+function load(){
+  try{ const r=localStorage.getItem(LS); if(r) S=Object.assign(S,JSON.parse(r)); }catch(e){}
+  S.settings={...DEF_SETTINGS,...(S.settings||{})};
+  if(S.keepScanning!==undefined){ S.settings.keepScanning=!!S.keepScanning; delete S.keepScanning; }
+  applyTheme();
+}
+function applyTheme(){ const t=ST().theme; if(t==="light"||t==="dark") document.documentElement.dataset.theme=t; else delete document.documentElement.dataset.theme; }
+let remindTimer=null;
+function syncReminders(){
+  clearTimeout(remindTimer);
+  remindTimer=setTimeout(()=>{
+    if(!N||!N.setReminders) return;
+    const [h,m]=(ST().remindTime||"18:00").split(":").map(Number);
+    try{ N.setReminders(JSON.stringify({enabled:!!ST().reminders,hour:h||18,minute:m||0,warnDays:W(),items:S.items.filter(i=>i.expiry).map(i=>({n:i.name,e:i.expiry}))})); }catch(e){}
+  },400);
+}
+/* Undo: snapshot the whole state before a change */
+let undoSnap=null;
+function snapshot(){ undoSnap=JSON.stringify(S); }
+function undo(){ if(!undoSnap) return; S=JSON.parse(undoSnap); undoSnap=null; save(); render(); toast("Undone"); }
 let saveWarned=false;
-function save(){ try{ localStorage.setItem(LS,JSON.stringify(S)); }catch(e){ if(!saveWarned){ saveWarned=true; toast("Phone storage for the app is full. Remove some photos or export a backup."); } } }
+function save(){ syncReminders(); try{ localStorage.setItem(LS,JSON.stringify(S)); }catch(e){ if(!saveWarned){ saveWarned=true; toast("Phone storage for the app is full. Remove some photos or export a backup."); } } }
 function commit(){ save(); render(); }
 
 /* ---------- network ---------- */
@@ -233,10 +294,10 @@ const offline = () => navigator.onLine===false;
 
 /* ---------- native bridge ---------- */
 const pending = {};
-window.onNative = (type,payload) => { const f=pending[type]; if(f){ delete pending[type]; f(payload); } else if(type==="toast") toast(payload); };
+window.onNative = (type,payload) => { const f=pending[type]; if(f){ delete pending[type]; f(payload); } else if(type==="toast") toast(payload); else if(type==="open"&&payload==="soon"){ closeSheet(); ui.tab="pantry"; ui.loc="soon"; render(); } };
 function nativeCall(type,fn){ return new Promise(res=>{ pending[type]=res; fn(); }); }
 function scanBarcode(){
-  if(N) return nativeCall("barcode",()=>N.scanBarcode());
+  if(N) return nativeCall("barcode",()=>N.scanBarcode(ST().beep!==false));
   return new Promise(res=>{
     sheet(`<div class="sheet-head"><h2>Enter barcode</h2><button class="x" data-close aria-label="Close">×</button></div>
       <p class="note">The camera scanner works in the Android app. Here you can type the digits under the barcode.</p>
@@ -273,7 +334,7 @@ function shareText(title,text){
 
 /* ---------- derived ---------- */
 function stats(){
-  const soon=S.items.filter(i=>{const d=daysLeft(i.expiry);return d!==null&&d>=0&&d<=3;}).length;
+  const soon=S.items.filter(i=>{const d=daysLeft(i.expiry);return d!==null&&d>=0&&d<=W();}).length;
   const gone=S.items.filter(i=>{const d=daysLeft(i.expiry);return d!==null&&d<0;}).length;
   return {total:S.items.length,soon,gone,shop:S.shopping.filter(s=>!s.done).length};
 }
@@ -281,7 +342,8 @@ function expTag(i){
   const d=daysLeft(i.expiry); if(d===null) return "";
   if(d<0) return `<span class="tag bad">expired ${-d}d ago</span>`;
   if(d===0) return `<span class="tag bad">use today</span>`;
-  if(d<=3) return `<span class="tag warn">${d}d left</span>`;
+  if(d===1) return `<span class="tag warn">tomorrow</span>`;
+  if(d<=W()) return `<span class="tag warn">${d}d left</span>`;
   if(d<=30) return `<span class="tag">${d}d left</span>`;
   return `<span class="tag">${new Date(i.expiry+"T00:00:00").toLocaleDateString(undefined,{month:"short",year:"numeric"})}</span>`;
 }
@@ -308,27 +370,46 @@ function render(){
   app.innerHTML=({pantry:vPantry,add:vAdd,recipes:vRecipes,shop:vShop})[ui.tab]();
 }
 
+function picProgress(){
+  if(!ui.pic) return "";
+  const {done,total,label}=ui.pic;
+  return `<div class="progress"><span>${esc(label||"Finding pictures")} ${done}/${total}</span><span class="bar"><i style="width:${Math.round(done/Math.max(1,total)*100)}%"></i></span><button data-act="stopPics">Stop</button></div>`;
+}
 function vPantry(){
-  if(!S.items.length) return `<section class="view"><div class="empty">
-    <h2>Your kitchen is empty</h2>
-    <p>Scan barcodes, read a receipt, search products or type items in. They show up here by fridge, freezer and pantry.</p>
-    <div class="row" style="width:100%"><button class="btn primary" data-tab="add">Add groceries</button><button class="btn" data-act="demo">Load example items</button></div>
+  if(!S.items.length) return `<section class="view"><div class="welcome">
+    <h2 style="color:inherit">Welcome to Kitchen Ledger</h2>
+    <p>Keep track of what's in your fridge, freezer and pantry, get warned before food expires, and find recipes for what you have.</p>
+    <div class="row"><button class="btn" data-act="scan">Scan a barcode</button><button class="btn" data-act="receipt" data-src="gallery">Read a receipt</button></div>
+    <div class="row"><button class="btn ghost" data-act="data">Import from KitchenPal or Excel</button><button class="btn ghost" data-act="demo">Try with example items</button></div>
   </div></section>`;
   const q=KL.norm(ui.q);
-  let items=S.items.filter(i=>(ui.loc==="all"||ui.loc==="soon"||i.location===ui.loc)&&(!q||KL.norm(i.name+" "+(i.brand||"")+" "+i.category).includes(q)));
-  if(ui.loc==="soon") items=items.filter(i=>{const d=daysLeft(i.expiry);return d!==null&&d<=3;});
-  items.sort((a,b)=>(daysLeft(a.expiry)??9999)-(daysLeft(b.expiry)??9999)||a.name.localeCompare(b.name));
-  const chip=(k,l)=>`<button class="chip" data-loc="${k}" aria-pressed="${ui.loc===k}">${l}</button>`;
-  let html=`<section class="view"><div><div class="search"><input id="q" type="search" placeholder="Search your kitchen" value="${esc(ui.q)}" autocomplete="off"></div>
+  const isSoon=i=>{const d=daysLeft(i.expiry);return d!==null&&d<=W();};
+  let items=S.items.filter(i=>(ui.loc==="all"||ui.loc==="soon"||i.location===ui.loc)&&(!q||KL.norm(i.name+" "+(i.brand||"")+" "+i.category+" "+(i.base||"")).includes(q)));
+  if(ui.loc==="soon") items=items.filter(isSoon);
+  const so=ST().sort;
+  const byName=(a,b)=>a.name.localeCompare(b.name);
+  const byExp=(a,b)=>(daysLeft(a.expiry)??99999)-(daysLeft(b.expiry)??99999)||byName(a,b);
+  items.sort(so==="name"?byName:so==="newest"?((a,b)=>String(b.added||"").localeCompare(String(a.added||""))||byName(a,b)):so==="amount"?((a,b)=>a.qty-b.qty||byName(a,b)):byExp);
+  const cnt=k=>k==="all"?S.items.length:k==="soon"?S.items.filter(isSoon).length:S.items.filter(i=>i.location===k).length;
+  const chip=(k,l)=>`<button class="chip" data-loc="${k}" aria-pressed="${ui.loc===k}">${l}<span class="n">${cnt(k)}</span></button>`;
+  const sortSel=`<button class="iconbtn" data-act="sortSheet" aria-label="Sort and group" style="width:44px;height:44px;flex:none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg></button>`;
+  let html=`<section class="view"><div><div class="search"><input id="q" type="search" placeholder="Search ${S.items.length} items" value="${esc(ui.q)}" autocomplete="off">${sortSel}</div>
     <div class="chips">${chip("all","All")}${chip("soon","Use soon")}${chip("fridge","Fridge")}${chip("freezer","Freezer")}${chip("pantry","Pantry")}</div></div>`;
-  if(!items.length) html+=`<p class="note">Nothing matches.</p>`;
-  const groups=ui.loc==="all"||ui.loc==="soon"?["fridge","freezer","pantry"]:[ui.loc];
-  for(const g of groups){
-    const gi=items.filter(i=>i.location===g); if(!gi.length) continue;
-    html+=`<div class="group-title">${LOC[g]} · ${gi.length}</div><div class="list">`+gi.map(i=>`
+  html+=picProgress();
+  if(!items.length) html+=`<div class="empty"><p>${ui.loc==="soon"?`Nothing expires in the next ${W()} days.`:"Nothing matches."}</p></div>`;
+  const row=i=>`
       <div class="item">${thumbHTML(i)}<button class="main" data-edit="${i.id}"><span class="name">${esc(i.name)}</span>
-        <span class="meta">${i.brand?`<span>${esc(i.brand)}</span>`:""}<span class="tag">${esc(i.category)}</span>${expTag(i)}</span></button>
-        <div class="qty"><button data-dec="${i.id}" aria-label="Use some ${esc(i.name)}">−</button><output>${fmtQty(i.qty,i.unit)}${isCount(i.unit)?` <small>${i.unit}</small>`:""}</output><button data-inc="${i.id}" aria-label="Add more ${esc(i.name)}">+</button></div></div>`).join("")+`</div>`;
+        <span class="meta">${i.brand?`<span>${esc(i.brand)}</span>`:""}${ST().group==="category"?`<span class="tag">${LOC[i.location]}</span>`:`<span class="tag">${esc(i.category)}</span>`}${expTag(i)}</span></button>
+        <div class="qty"><button data-dec="${i.id}" aria-label="Use some ${esc(i.name)}">−</button><output>${fmtQty(i.qty,i.unit)}${isCount(i.unit)?` <small>${i.unit}</small>`:""}</output><button data-inc="${i.id}" aria-label="Add more ${esc(i.name)}">+</button></div></div>`;
+  const gm=ST().group;
+  if(gm==="none"){ if(items.length) html+=`<div class="list">${items.map(row).join("")}</div>`; }
+  else {
+    const keys=gm==="category"?CATS:["fridge","freezer","pantry"];
+    const keyOf=i=>gm==="category"?(CATS.includes(i.category)?i.category:"Other"):i.location;
+    for(const g of keys){
+      const gi=items.filter(i=>keyOf(i)===g); if(!gi.length) continue;
+      html+=`<div class="group-title">${gm==="category"?esc(g):LOC[g]} · ${gi.length}</div><div class="list">${gi.map(row).join("")}</div>`;
+    }
   }
   return html+`</section>`;
 }
@@ -341,7 +422,7 @@ function vAdd(){
       <button class="tile" data-act="searchProducts">${ICON.search}<h3>Search products</h3><p>Find any product by name, with its picture.</p></button>
       <button class="tile wide" data-act="manual">${ICON.pen}<span><h3>Type it in</h3><p>Fresh food, market buys, leftovers.</p></span></button>
     </div>
-    <label class="switch" for="keepScan"><span><h3>Keep scanning</h3><span class="note">After each product, the scanner opens again. Handy when unpacking a full bag.</span></span><input type="checkbox" id="keepScan" ${S.keepScanning?"checked":""}></label>
+    <label class="switch"><span><h3>Keep scanning</h3><span class="note">After each product, the scanner opens again. Handy when unpacking a full bag.</span></span><input type="checkbox" class="tog" data-set="keepScanning" ${ST().keepScanning?"checked":""}></label>
     <button class="btn ghost" data-act="receipt" data-src="gallery">Read a receipt from your photos</button>
     <div class="stripe" aria-hidden="true"></div>
     <p class="note">Product lookup uses Open Food Facts, a free food database, and needs internet. Receipts are read on your phone, offline. Deposits, bags and discounts are skipped.</p>
@@ -392,7 +473,13 @@ const layer=document.getElementById("layer");
 function sheet(html){ layer.innerHTML=`<div class="scrim" data-close><div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div></div>`; }
 function closeSheet(){ layer.innerHTML=""; }
 function busySheet(msg){ sheet(`<div class="thinking" style="padding:24px 4px"><span class="dots"><i></i><i></i><i></i></span>${esc(msg)}</div>`); }
-function toast(t){ document.querySelectorAll(".toast").forEach(x=>x.remove()); const d=document.createElement("div"); d.className="toast"; d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),2600); }
+function toast(t,withUndo){
+  document.querySelectorAll(".toast").forEach(x=>x.remove());
+  const d=document.createElement("div"); d.className="toast"; d.setAttribute("role","status");
+  const sp=document.createElement("span"); sp.textContent=t; d.appendChild(sp);
+  if(withUndo&&undoSnap){ const b=document.createElement("button"); b.textContent="Undo"; b.onclick=()=>{ d.remove(); undo(); }; d.appendChild(b); }
+  document.body.appendChild(d); setTimeout(()=>d.remove(),withUndo?5000:2600);
+}
 
 function addItem(n){
   const ex=S.items.find(x=>(n.barcode&&x.barcode===n.barcode)||(same(x.name,n.name)&&x.unit===n.unit&&x.location===n.location));
@@ -413,7 +500,9 @@ function itemForm(it,title,hint,after){
   ${hint||""}
   <div class="photo-row"><span id="fThumb">${thumbHTML(draft,true)}</span>
     <div class="btns"><button class="btn small" type="button" id="fCam">${draft.photo?"Retake photo":"Take photo"}</button><button class="btn small ghost" type="button" id="fGal">From gallery</button>
+    <button class="btn small ghost" type="button" id="fFind">Find picture</button>
     <button class="btn small ghost" type="button" id="fNoPhoto" ${draft.photo||draft.image?"":"hidden"}>Remove picture</button></div></div>
+  <div id="picBox"></div>
   <form class="form" id="itemForm">
     <label class="full">Name<input class="field" id="fName" required value="${esc(it.name||"")}" placeholder="e.g. Gouda, Luxlait yogurt, rice" autocomplete="off"><span class="hint" id="fHint"></span></label>
     ${isNew?`<div class="full" id="offBox"></div>`:""}
@@ -421,11 +510,12 @@ function itemForm(it,title,hint,after){
     <label>Category<select class="field" id="fCat">${o(CATS,it.category||"Other")}</select></label>
     <label>Amount<input class="field" id="fQty" type="number" step="any" min="0" inputmode="decimal" value="${it.qty??1}"></label>
     <label>Unit<select class="field" id="fUnit">${o(UNITS,it.unit||"pcs")}</select></label>
-    <label>Stored in<select class="field" id="fLoc">${o(Object.keys(LOC),it.location||"pantry",LOC)}</select></label>
+    <label>Stored in<select class="field" id="fLoc">${o(Object.keys(LOC),it.location||ST().defaultLoc||"pantry",LOC)}</select></label>
     <label>Best before<input class="field" id="fExp" type="date" value="${esc(it.expiry||"")}"></label>
     <label class="full">Remind me to buy more at or below<input class="field" id="fMin" type="number" step="any" min="0" inputmode="decimal" placeholder="e.g. 1" value="${it.minQty??""}"></label>
     ${it.barcode?`<p class="note full">Barcode <span class="code">${esc(it.barcode)}</span></p>`:""}
     <div class="row full"><button class="btn primary" type="submit">${isNew?"Add to kitchen":"Save"}</button>${!isNew?`<button class="btn ghost" type="button" data-del="${it.id}">Remove</button>`:""}</div>
+    ${!isNew?`<div class="row full"><button class="btn small ghost" type="button" data-act="itemToList" data-id="${it.id}">${onList(it.name)?"On the shopping list ✓":"Add to shopping list"}</button>${it.added?`<span class="note" style="align-self:center">Added ${esc(it.added)}</span>`:""}</div>`:""}
   </form>`);
   const g=id=>document.getElementById(id);
   const touched={cat:!!it.category&&it.category!=="Other",loc:!isNew||!!it.location,exp:!!it.expiry,unit:!isNew};
@@ -435,14 +525,25 @@ function itemForm(it,title,hint,after){
   async function photo(src){ const d=await pickPhoto(src); if(d){ draft.photo=d; refresh(); } }
   g("fCam").onclick=()=>photo("camera"); g("fGal").onclick=()=>photo("gallery");
   g("fNoPhoto").onclick=()=>{ draft.photo=null; draft.image=null; refresh(); };
+  g("fFind").onclick=async()=>{
+    const box=g("picBox"); const q=(g("fName").value+" "+g("fBrand").value).trim();
+    if(!q){ box.innerHTML=`<p class="note">Type a name first.</p>`; return; }
+    if(offline()){ box.innerHTML=`<p class="note">You're offline. Pictures need internet.</p>`; return; }
+    box.innerHTML=`<div class="thinking"><span class="dots"><i></i><i></i><i></i></span>Searching pictures</div>`;
+    const opts=[];
+    const mi=await mealImage(KL.guess(g("fName").value).base||g("fName").value); if(mi) opts.push(mi);
+    try{ (await offSearch(q,12)).forEach(p=>{ if(p.image&&!opts.includes(p.image)) opts.push(p.image); }); }catch(e){}
+    if(!g("picBox")) return;
+    box.innerHTML=opts.length?`<p class="note" style="margin-bottom:6px">Tap a picture to use it</p><div class="pics">${opts.slice(0,12).map((u,k)=>`<button type="button" data-k="${k}"><img src="${esc(u)}" alt="" loading="lazy"></button>`).join("")}</div>`:`<p class="note">No pictures found. Take a photo instead.</p>`;
+    box.querySelectorAll("button[data-k]").forEach(b=>b.onclick=()=>{ draft.image=opts[+b.dataset.k]; draft.photo=null; refresh(); box.innerHTML=""; });
+  };
   function applyGuess(){
     const gs=KL.guess(g("fName").value);
     draft.base=gs.base;
     if(gs.base){
       if(!touched.cat) g("fCat").value=gs.category;
       if(!touched.loc) g("fLoc").value=gs.location;
-      if(!touched.exp&&gs.shelfDays) g("fExp").value=addDays(gs.shelfDays);
-      if(!touched.exp&&!gs.shelfDays) g("fExp").value="";
+      if(!touched.exp) g("fExp").value=autoExp(gs.shelfDays)||"";
       g("fHint").textContent=`Recognized: ${gs.base} · ${gs.category} · ${LOC[gs.location]}${gs.shelfDays?` · keeps ~${gs.shelfDays} days`:""}`;
     } else g("fHint").textContent=g("fName").value.trim().length>2?"Not recognized. Search below or set the category yourself.":"";
     refresh();
@@ -464,7 +565,7 @@ function itemForm(it,title,hint,after){
   }
   function fillFrom(p){
     g("fName").value=p.name; g("fBrand").value=p.brand||""; g("fCat").value=p.category; g("fLoc").value=p.location;
-    g("fQty").value=p.qty; g("fUnit").value=p.unit; if(p.shelfDays&&!touched.exp) g("fExp").value=addDays(p.shelfDays);
+    g("fQty").value=p.qty; g("fUnit").value=p.unit; if(p.shelfDays&&!touched.exp&&ST().autoExpiry) g("fExp").value=addDays(p.shelfDays);
     draft.image=p.image; draft.barcode=draft.barcode||p.barcode; draft.base=p.base; draft.shelfDays=p.shelfDays;
     touched.cat=touched.loc=true; g("fHint").textContent=`${p.category} · ${LOC[p.location]}`; refresh();
   }
@@ -477,6 +578,7 @@ function itemForm(it,title,hint,after){
     if(!n.base) n.base=KL.guess(n.name).base;
     const sd=draft.shelfDays; delete n.shelfDays;
     if(!isNew){ S.items=S.items.map(x=>x.id===it.id?n:x); toast("Saved"); }
+    if(!n.photo&&!n.image) n.picChecked=false;
     else { addItem(n); toast(`Added ${n.name}`); }
     rememberBarcode(n,sd);
     closeSheet(); commit();
@@ -493,11 +595,13 @@ async function offSearch(q,size){
 async function scanFlow(){
   const code=await scanBarcode();
   if(!code){ closeSheet(); return; }
-  const again=()=>{ if(S.keepScanning&&N) setTimeout(scanFlow,350); };
+  const again=()=>{ if(ST().keepScanning&&N) setTimeout(scanFlow,350); };
   const known=S.barcodes[code];
   if(known){
-    const it=addItem({...known,qty:known.qty||1,expiry:known.shelfDays?addDays(known.shelfDays):null,barcode:code});
-    closeSheet(); commit(); toast(`+${fmtQty(known.qty||1,known.unit)} ${known.name} · now ${fmtQty(it.qty,it.unit)}`); again(); return;
+    snapshot();
+    const it=addItem({...known,qty:known.qty||1,expiry:autoExp(known.shelfDays),barcode:code});
+    if(N&&N.vibrate) N.vibrate();
+    closeSheet(); commit(); toast(`+${fmtQty(known.qty||1,known.unit)} ${known.name} · now ${fmtQty(it.qty,it.unit)}`,true); again(); return;
   }
   if(offline()){ itemForm({barcode:code,qty:1},"New product",`<p class="note">You're offline, so the product can't be looked up. Fill it in once and this barcode is remembered.</p>`,again); return; }
   busySheet("Looking up the product…");
@@ -507,7 +611,8 @@ async function scanFlow(){
     if(j&&j.status===1&&j.product) p=KL.mapOFF(j.product,code);
   }catch(e){}
   if(p&&p.name!=="Unknown product"){
-    itemForm({...p,expiry:p.shelfDays?addDays(p.shelfDays):null},"Found it",`<p class="note">Check the details. Next time this barcode is added in one tap.</p>`,again);
+    if(N&&N.vibrate) N.vibrate();
+    itemForm({...p,expiry:autoExp(p.shelfDays)},"Found it",`<p class="note">Check the details. Next time this barcode is added in one tap.</p>`,again);
   } else {
     itemForm({barcode:code,qty:1},"New product",`<p class="note">This barcode isn't in Open Food Facts yet. Type the name (matching products appear below) and it's remembered for next time.</p>`,again);
   }
@@ -525,18 +630,24 @@ async function receiptFlow(src){
   if(!receiptRows.length){ sheet(`<div class="sheet-head"><h2>Receipt</h2><button class="x" data-close aria-label="Close">×</button></div><p class="err">No items found. Lay the receipt flat in good light, fill the frame with it, and try again.</p>`); return; }
   showReceipt(r);
 }
+let receiptInfo=null;
+function rName(x){ return ST().receiptNames==="english"&&x.english?x.english:x.name; }
 function showReceipt(r){
+  receiptInfo=r||receiptInfo;
   const total=receiptRows.reduce((a,x)=>a+(x.price||0),0);
   const o=(arr,v,lab)=>arr.map(a=>`<option value="${a}" ${a===v?"selected":""}>${lab?lab[a]:a}</option>`).join("");
-  sheet(`<div class="sheet-head"><h2>${esc(r.store||"Receipt")}</h2><button class="x" data-close aria-label="Close">×</button></div>
-    <p class="note">${receiptRows.length} items${r.date?` · ${esc(r.date)}`:""}${total?` · €${total.toFixed(2)}`:""}. Untick what you don't want to store and fix names by tapping them. Items marked "check" weren't recognized.</p>
-    <div class="list">${receiptRows.map(x=>`<div class="review"><input type="checkbox" data-keep="${x._id}" ${x.category==="Household"?"":"checked"} aria-label="Keep ${esc(x.name)}">
-      <div class="grow"><input class="nm" data-rname="${x._id}" value="${esc(x.name)}" aria-label="Item name">
-      <div class="meta">${x.matched?"":`<span class="tag warn">check</span>`}${x.matched&&x.original!==x.name?`<span>${esc(x.original)}</span>`:""}
+  const eng=ST().receiptNames==="english";
+  sheet(`<div class="sheet-head"><h2>${esc(receiptInfo.store||"Receipt")}</h2><button class="x" data-close aria-label="Close">×</button></div>
+    <p class="note">${receiptRows.length} items${receiptInfo.date?` · ${esc(receiptInfo.date)}`:""}${total?` · €${total.toFixed(2)}`:""}. Tap a name to change it. Untick anything you don't want to store.</p>
+    <div class="review-head"><div class="seg" role="radiogroup" aria-label="Item names" style="flex:1 1 220px"><label><input type="radio" name="rnames" value="english" ${eng?"checked":""}>Clear names</label><label><input type="radio" name="rnames" value="printed" ${eng?"":"checked"}>As on receipt</label></div>
+    <button class="btn small ghost" type="button" data-act="rAll">Select none</button></div>
+    <div class="list">${receiptRows.map(x=>`<div class="review"><input type="checkbox" data-keep="${x._id}" checked aria-label="Keep ${esc(rName(x))}">
+      <div class="grow"><input class="nm" data-rname="${x._id}" value="${esc(rName(x))}" aria-label="Item name">
+      <div class="meta">${x.matched?"":`<span class="tag warn">check</span>`}${eng&&x.english?`<span>${esc(x.original)}</span>`:(x.english?`<span>${esc(x.english)}</span>`:"")}
       <select data-rcat="${x._id}" aria-label="Category">${o(CATS,x.category)}</select><select data-rloc="${x._id}" aria-label="Stored in">${o(Object.keys(LOC),x.location,LOC)}</select>
       <span class="tag">${fmtQty(x.qty,x.unit)}${isCount(x.unit)?" "+x.unit:""}</span></div></div>
       ${x.price!=null?`<span class="note" style="font-variant-numeric:tabular-nums">€${Number(x.price).toFixed(2)}</span>`:""}</div>`).join("")}</div>
-    <button class="btn primary" data-act="saveReceipt">Add to kitchen</button>`);
+    <button class="btn primary" data-act="saveReceipt">Add ${receiptRows.length} items to kitchen</button>`);
 }
 
 /* recipes */
@@ -614,34 +725,84 @@ function cookedSheet(ix){
     <button class="btn primary" data-act="cookedDo">Done</button>`);
 }
 
-/* Look up barcoded items in Open Food Facts to fill in missing pictures and categories */
-let enriching=false;
-async function enrichItems(){
-  if(enriching||offline()) return;
-  const todo=S.items.filter(i=>i.barcode&&!i.offChecked&&(!i.image&&!i.photo||i.category==="Other"||!i.brand));
-  if(!todo.length) return;
-  enriching=true; let done=0, found=0, pics=0;
-  const work=todo.slice(); 
+/* ---------- pictures ----------
+   1. barcode -> Open Food Facts product photo
+   2. known food -> TheMealDB ingredient picture
+   3. otherwise (optional) -> Open Food Facts search by name (max ~9 per minute) */
+let mealIngs=null;
+async function mealIngredientMap(){
+  if(mealIngs) return mealIngs;
+  try{ const c=localStorage.getItem("kl-ings"); if(c){ mealIngs=JSON.parse(c); return mealIngs; } }catch(e){}
+  try{
+    const j=await getJSON(MEALDB+"list.php?i=list",15000);
+    const m={}; (j.meals||[]).forEach(x=>{ if(x.strIngredient) m[KL.norm(x.strIngredient)]=x.strIngredient; });
+    mealIngs=m; try{ localStorage.setItem("kl-ings",JSON.stringify(m)); }catch(e){}
+  }catch(e){ mealIngs={}; }
+  return mealIngs;
+}
+async function mealImage(name){
+  if(!name) return null;
+  const m=await mealIngredientMap(); const n=KL.norm(name); if(!n) return null;
+  const words=n.split(" ");
+  const cands=[n, n.replace(/s$/,""), n+"s", n.replace(/es$/,""), words[words.length-1], words[words.length-1].replace(/s$/,""), words[words.length-1]+"s", words[0]];
+  for(const c of cands){ if(c&&m[c]) return "https://www.themealdb.com/images/ingredients/"+encodeURIComponent(m[c])+".png"; }
+  return null;
+}
+let picStop=false;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function enrichItems(force){
+  if(ui.pic||offline()) return;
+  if(!force&&!ST().autoPictures) return;
+  const need=i=>!i.image&&!i.photo||i.category==="Other";
+  const todo=S.items.filter(i=>need(i)&&(force||!i.picChecked));
+  if(!todo.length){ if(force) toast("All items already have pictures"); return; }
+  picStop=false; let pics=0;
+  ui.pic={done:0,total:todo.length,label:"Finding pictures"}; if(ui.tab==="pantry") render();
+  const tick=()=>{ ui.pic.done++; if(ui.tab==="pantry"&&!layer.innerHTML){ const el=document.querySelector(".progress"); if(el) el.outerHTML=picProgress(); else render(); } };
+  const nameQueue=[];
+  // fast pass: barcodes (3 at a time) and ingredient pictures
+  const work=todo.slice();
   async function worker(){
-    while(work.length){
+    while(work.length&&!picStop){
       const it=work.shift();
-      try{
-        const j=await getJSON(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(it.barcode)}.json?fields=${OFF_FIELDS}`,15000);
-        if(j&&j.status===1&&j.product){
-          const p=KL.mapOFF(j.product,it.barcode); found++;
-          if(p.image&&!it.image&&!it.photo){ it.image=p.image; pics++; }
-          if(it.category==="Other"&&p.category&&p.category!=="Other") it.category=p.category;
-          if(!it.brand&&p.brand) it.brand=p.brand;
-          if(!S.barcodes[it.barcode]) S.barcodes[it.barcode]={name:it.name,brand:it.brand,category:it.category,unit:it.unit,qty:it.qty,location:it.location,image:it.image||null,photo:it.photo||null,base:it.base||null,shelfDays:p.shelfDays};
-        }
-      }catch(e){}
-      it.offChecked=true; done++;
-      if(done%8===0){ save(); render(); toast(`Finding pictures… ${done}/${todo.length}`); }
+      if(it.barcode&&!it.offChecked){
+        try{
+          const j=await getJSON(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(it.barcode)}.json?fields=${OFF_FIELDS}`,15000);
+          if(j&&j.status===1&&j.product){
+            const p=KL.mapOFF(j.product,it.barcode);
+            if(p.image&&!it.image&&!it.photo){ it.image=p.image; pics++; }
+            if(it.category==="Other"&&p.category&&p.category!=="Other") it.category=p.category;
+            if(!it.brand&&p.brand) it.brand=p.brand;
+            if(!S.barcodes[it.barcode]) S.barcodes[it.barcode]={name:it.name,brand:it.brand,category:it.category,unit:it.unit,qty:it.qty,location:it.location,image:it.image||null,photo:it.photo||null,base:it.base||null,shelfDays:p.shelfDays};
+          }
+        }catch(e){}
+        it.offChecked=true;
+      }
+      if(!it.image&&!it.photo){
+        const base=it.base||KL.guess(it.name).base;
+        const mi=base?await mealImage(base):null;
+        if(mi){ it.image=mi; pics++; }
+      }
+      if(!it.image&&!it.photo&&ST().nameSearch) nameQueue.push(it);
+      else { it.picChecked=true; tick(); }
     }
   }
   await Promise.all([worker(),worker(),worker()]);
-  enriching=false; save(); render();
-  if(found) toast(`${pics} pictures and details added from Open Food Facts`);
+  save();
+  // slow pass: search by name, spaced out to respect Open Food Facts limits
+  if(nameQueue.length&&!picStop){ ui.pic.label="Searching pictures by name"; }
+  for(const it of nameQueue){
+    if(picStop||offline()) break;
+    try{
+      const res=await offSearch((it.name+" "+(it.brand||"")).trim(),5);
+      const hit=res.find(p=>p.image);
+      if(hit&&!it.image&&!it.photo){ it.image=hit.image; pics++; if(it.category==="Other"&&hit.category!=="Other") it.category=hit.category; }
+    }catch(e){}
+    it.picChecked=true; tick(); save();
+    await sleep(6500);
+  }
+  ui.pic=null; save(); render();
+  toast(picStop?`Stopped. ${pics} pictures added.`:`${pics} pictures added`);
 }
 
 /* CSV */
@@ -672,22 +833,88 @@ function showImport(){
     <button class="btn primary" data-act="doImport">Import ${items.length} items</button>`;
 }
 
+function sortSheet(){
+  const seg=(name,opts,cur)=>`<div class="seg" role="radiogroup" style="flex-wrap:wrap">${opts.map(([v,l])=>`<label><input type="radio" name="${name}" value="${v}" ${cur===v?"checked":""}>${l}</label>`).join("")}</div>`;
+  sheet(`<div class="sheet-head"><h2>Sort and group</h2><button class="x" data-close aria-label="Close">×</button></div>
+    <div class="set-title">Sort by</div>${seg("sortBy",[["expiry","Expiry"],["name","Name"],["newest","Newest"],["amount","Amount"]],ST().sort)}
+    <div class="set-title">Group by</div>${seg("groupBy",[["place","Place"],["category","Category"],["none","None"]],ST().group)}
+    <button class="btn primary" data-close>Done</button>`);
+}
+
+/* ---------- settings ---------- */
+function settingsSheet(){
+  const st=ST();
+  const tog=(k,label,sub)=>`<label class="set"><span class="lbl">${label}${sub?`<small>${sub}</small>`:""}</span><input type="checkbox" class="tog" data-set="${k}" ${st[k]?"checked":""}></label>`;
+  const sel=(k,label,opts,sub)=>`<label class="set"><span class="lbl">${label}${sub?`<small>${sub}</small>`:""}</span><select data-set="${k}">${opts.map(([v,l])=>`<option value="${v}" ${String(st[k])===String(v)?"selected":""}>${l}</option>`).join("")}</select></label>`;
+  const btn=(act,label,sub,cls)=>`<button class="set ${cls||""}" data-act="${act}"><span class="lbl">${label}${sub?`<small>${sub}</small>`:""}</span><span class="chev">›</span></button>`;
+  const missing=S.items.filter(i=>!i.image&&!i.photo).length;
+  const examples=S.items.filter(i=>/\(example\)$/.test(i.name)).length;
+  const ver=N&&N.appVersion?N.appVersion():"";
+  sheet(`<div class="sheet-head"><h2>Settings</h2><button class="x" data-close aria-label="Close">×</button></div>
+  <div class="set-group"><div class="set-title">Kitchen</div><div class="set-list">
+    ${sel("warnDays","Warn me before food expires",[[1,"1 day before"],[2,"2 days before"],[3,"3 days before"],[5,"5 days before"],[7,"1 week before"]])}
+    ${sel("defaultLoc","New items go to",[["fridge","Fridge"],["freezer","Freezer"],["pantry","Pantry"]],"Recognized foods still go where they belong")}
+    ${tog("autoExpiry","Fill in best-before dates","Estimates a date from typical shelf life. You can always change it.")}
+    ${tog("runOutToList","Add used-up items to the shopping list")}
+  </div></div>
+  <div class="set-group"><div class="set-title">Reminders</div><div class="set-list">
+    ${tog("reminders","Daily expiry reminder",N?"A notification about food to use soon":"Works in the Android app")}
+    ${st.reminders?`<label class="set"><span class="lbl">Reminder time</span><input type="time" data-set="remindTime" value="${esc(st.remindTime)}"></label>
+    ${N&&N.testReminder?btn("testReminder","Send a test reminder now"):""}`:""}
+  </div></div>
+  <div class="set-group"><div class="set-title">Scanning and receipts</div><div class="set-list">
+    ${tog("keepScanning","Keep scanning","The scanner opens again after each product")}
+    ${tog("beep","Beep when a barcode is read")}
+    ${sel("receiptNames","Names from receipts",[["english","Clear names"],["printed","As on receipt"]],'Clear names: “Filet de poulet” becomes “Chicken breast”')}
+  </div></div>
+  <div class="set-group"><div class="set-title">Pictures</div><div class="set-list">
+    ${tog("autoPictures","Find pictures automatically","For new and imported items")}
+    ${tog("nameSearch","Also search by product name","Slower, and sometimes picks a similar product")}
+    ${btn("findPics","Find missing pictures now",missing?`${missing} items without a picture`:"Every item has a picture")}
+  </div></div>
+  <div class="set-group"><div class="set-title">Appearance</div><div class="set-list">
+    ${sel("theme","Theme",[["system","Same as phone"],["light","Light"],["dark","Dark"]])}
+  </div></div>
+  <div class="set-group"><div class="set-title">Your data</div><div class="set-list">
+    ${btn("data","Import and export","CSV and Excel, including KitchenPal")}
+    ${btn("backup","Save a full backup","Kitchen, shopping list, settings and scanned barcodes")}
+    ${btn("restore","Restore a backup")}
+    ${examples?btn("delExamples",`Remove ${examples} example items`):""}
+    ${ui.confirmWipe?`<div class="set danger" style="flex-wrap:wrap"><span class="lbl">Delete all ${S.items.length} items and the shopping list?</span><span class="row"><button class="btn small" data-act="wipeNo">Cancel</button><button class="btn small primary" style="background:var(--bad);border-color:var(--bad)" data-act="wipeYes">Delete</button></span></div>`:btn("wipe","Delete everything",null,"danger")}
+  </div></div>
+  <p class="note" style="text-align:center">Kitchen Ledger ${esc(ver)} · Your data stays on this phone.<br>Product data: Open Food Facts · Recipes: TheMealDB</p>`);
+}
+function onSetting(t){
+  const k=t.dataset.set; let v=t.type==="checkbox"?t.checked:t.value;
+  if(k==="warnDays") v=Number(v);
+  S.settings[k]=v;
+  if(k==="theme") applyTheme();
+  if(k==="reminders"&&v){
+    if(!N){ S.settings.reminders=false; toast("Reminders work in the Android app"); }
+    else if(N.requestNotifications) nativeCall("notif",()=>N.requestNotifications()).then(ok=>{ if(ok!=="1"){ S.settings.reminders=false; save(); toast("Notifications are blocked. Allow them in Android settings for Kitchen Ledger."); } else toast(`Reminder set for ${ST().remindTime} every day`); if(document.querySelector(".set-list")) settingsSheet(); });
+  }
+  save();
+  if(["reminders","theme"].includes(k)&&document.querySelector(".set-list")){ const sc=layer.querySelector(".sheet")?.scrollTop||0; settingsSheet(); const sh=layer.querySelector(".sheet"); if(sh) sh.scrollTop=sc; }
+  if(["warnDays","sort","group"].includes(k)) render();
+}
+
 /* ---------- events ---------- */
 document.addEventListener("click",async e=>{
   const t=e.target.closest("[data-tab],[data-loc],[data-inc],[data-dec],[data-edit],[data-del],[data-act],[data-recipe],[data-delshop],[data-close]");
   if(!t) return;
-  if(t.hasAttribute("data-close")){ if(e.target===t||t.classList.contains("x")) closeSheet(); return; }
+  if(t.hasAttribute("data-close")){ if(e.target===t||t.tagName==="BUTTON") closeSheet(); return; }
   if(t.dataset.tab){ ui.tab=t.dataset.tab; render(); scrollTo(0,0); return; }
   if(t.dataset.loc){ ui.loc=t.dataset.loc; render(); return; }
   if(t.dataset.inc||t.dataset.dec){
     const id=t.dataset.inc||t.dataset.dec, it=S.items.find(x=>x.id===id); if(!it) return;
     const step=it.unit==="g"||it.unit==="ml"?(it.qty>500?100:50):it.unit==="kg"||it.unit==="l"?0.25:1;
-    it.qty=Math.max(0,Math.round((it.qty+(t.dataset.inc?step:-step))*1000)/1000);
-    if(it.qty===0){ S.items=S.items.filter(x=>x.id!==id); toList(it.name); toast(`${it.name} used up, added to shopping list`); }
+    const nq=Math.max(0,Math.round((it.qty+(t.dataset.inc?step:-step))*1000)/1000);
+    if(nq===0){ snapshot(); it.qty=0; S.items=S.items.filter(x=>x.id!==id); if(ST().runOutToList){ toList(it.name.replace(" (example)","")); toast(`${it.name} used up and added to the shopping list`,true); } else toast(`${it.name} used up`,true); }
+    else it.qty=nq;
     commit(); return;
   }
   if(t.dataset.edit){ const it=S.items.find(x=>x.id===t.dataset.edit); if(it) itemForm(it,"Edit item"); return; }
-  if(t.dataset.del){ S.items=S.items.filter(x=>x.id!==t.dataset.del); closeSheet(); commit(); toast("Removed"); return; }
+  if(t.dataset.del){ snapshot(); const it=S.items.find(x=>x.id===t.dataset.del); S.items=S.items.filter(x=>x.id!==t.dataset.del); closeSheet(); commit(); toast(`${it?it.name:"Item"} removed`,true); return; }
   if(t.dataset.recipe){ showRecipe(+t.dataset.recipe); return; }
   if(t.dataset.delshop){ S.shopping=S.shopping.filter(s=>s.id!==t.dataset.delshop); commit(); return; }
   const a=t.dataset.act;
@@ -697,6 +924,24 @@ document.addEventListener("click",async e=>{
   else if(a==="searchProducts") itemForm({qty:1},"Search products",`<p class="note">Type a product name. Pick a match to fill in the details and picture.</p>`);
   else if(a==="manual") itemForm({qty:1,unit:"pcs"},"Add an item");
   else if(a==="data") dataSheet();
+  else if(a==="sortSheet") sortSheet();
+  else if(a==="settings"){ ui.confirmWipe=false; settingsSheet(); }
+  else if(a==="stopPics"){ picStop=true; }
+  else if(a==="findPics"){ closeSheet(); ui.tab="pantry"; render(); S.items.forEach(i=>{ if(!i.image&&!i.photo) i.picChecked=false; }); enrichItems(true); }
+  else if(a==="testReminder"){ N.testReminder(); toast("Test reminder sent"); }
+  else if(a==="backup"){ const name=`kitchen-ledger-backup-${iso(today())}.json`; const data=JSON.stringify({app:"KitchenLedger",version:1,saved:new Date().toISOString(),state:S}); if(!saveFile(name,data)) shareText("Kitchen Ledger backup",data); }
+  else if(a==="restore"){
+    const txt=await pickCsv(); if(!txt) return;
+    let d=null; try{ d=JSON.parse(txt.replace(/^\uFEFF/,"")); }catch(e){}
+    if(!d||d.app!=="KitchenLedger"||!d.state){ toast("That isn't a Kitchen Ledger backup file"); return; }
+    snapshot(); S=Object.assign({items:[],shopping:[],barcodes:{}},d.state); S.settings={...DEF_SETTINGS,...(S.settings||{})}; applyTheme(); closeSheet(); commit(); toast(`Backup restored: ${S.items.length} items`,true);
+  }
+  else if(a==="delExamples"){ snapshot(); S.items=S.items.filter(i=>!/\(example\)$/.test(i.name)); closeSheet(); commit(); toast("Example items removed",true); }
+  else if(a==="wipe"){ ui.confirmWipe=true; settingsSheet(); }
+  else if(a==="wipeNo"){ ui.confirmWipe=false; settingsSheet(); }
+  else if(a==="wipeYes"){ snapshot(); S.items=[]; S.shopping=[]; ui.confirmWipe=false; closeSheet(); commit(); toast("Everything deleted",true); }
+  else if(a==="rAll"){ const boxes=[...layer.querySelectorAll("[data-keep]")]; const anyOn=boxes.some(b=>b.checked); boxes.forEach(b=>b.checked=!anyOn); t.textContent=anyOn?"Select all":"Select none"; }
+  else if(a==="itemToList"){ const it=S.items.find(i=>i.id===t.dataset.id); if(it){ toList(it.name); commit(); t.textContent="On the shopping list ✓"; } }
   else if(a==="demo"){
     const ex=[["Whole milk","Luxlait",1,"l",4],["Eggs","",6,"pcs",12],["Spinach","",200,"g",2],["Chicken breast","",400,"g",1],["Spaghetti","",500,"g",300],["Chopped tomatoes","",2,"pcs",500],["Onions","",3,"pcs",20],["Garlic","",1,"pcs",40],["Frozen peas","",450,"g",180],["Parmesan","",150,"g",25],["Potatoes","",1.5,"kg",21]];
     ex.forEach(([name,brand,qty,unit,d])=>{ const gs=KL.guess(name); addItem({name:name+" (example)",brand,qty,unit,category:gs.category,location:gs.location,base:gs.base,expiry:addDays(d)}); });
@@ -706,47 +951,53 @@ document.addEventListener("click",async e=>{
   else if(a==="missing"){ const r=ui.recipes[+t.dataset.ix]; r.ings.filter(x=>!x.have).forEach(x=>toList(x.name,x.amount)); commit(); closeSheet(); toast("Added to shopping list"); }
   else if(a==="cookedAsk") cookedSheet(+t.dataset.ix);
   else if(a==="cookedDo"){
-    let n=0;
+    snapshot(); let n=0;
     layer.querySelectorAll("[data-use]").forEach(inp=>{ const it=S.items.find(i=>i.id===inp.dataset.use); const u=parseFloat(inp.value)||0; if(!it||u<=0) return; n++;
-      it.qty=Math.max(0,Math.round((it.qty-u)*1000)/1000); if(it.qty===0){ S.items=S.items.filter(i=>i.id!==it.id); toList(it.name.replace(" (example)","")); } });
-    S.cooked=(S.cooked||0)+1; closeSheet(); commit(); toast(`Enjoy! ${n} items updated`);
+      it.qty=Math.max(0,Math.round((it.qty-u)*1000)/1000); if(it.qty===0){ S.items=S.items.filter(i=>i.id!==it.id); if(ST().runOutToList) toList(it.name.replace(" (example)","")); } });
+    S.cooked=(S.cooked||0)+1; closeSheet(); commit(); toast(`Enjoy! ${n} items updated`,true);
   }
   else if(a==="saveReceipt"){
-    let n=0;
+    snapshot(); let n=0;
     receiptRows.forEach(x=>{ const keep=layer.querySelector(`[data-keep="${x._id}"]`); if(!keep||!keep.checked) return;
       const nm=layer.querySelector(`[data-rname="${x._id}"]`).value.trim()||x.name;
       const cat=layer.querySelector(`[data-rcat="${x._id}"]`).value, loc=layer.querySelector(`[data-rloc="${x._id}"]`).value;
       const gs=KL.guess(nm); const days=gs.base&&gs.category===cat?gs.shelfDays:(x.shelfDays&&x.category===cat?x.shelfDays:CAT_DAYS[cat]);
-      addItem({name:nm,brand:"",qty:x.qty||1,unit:x.unit||"pcs",category:cat,location:loc,base:gs.base,expiry:days?addDays(days):null});
+      addItem({name:nm,brand:"",qty:x.qty||1,unit:x.unit||"pcs",category:cat,location:loc,base:gs.base||x.english||null,expiry:autoExp(days)});
       S.shopping=S.shopping.filter(s=>s.done||!(same(s.name,nm)||(gs.base&&same(s.name,gs.base)))); n++; });
-    closeSheet(); ui.tab="pantry"; ui.loc="all"; commit(); toast(`${n} items added`);
+    closeSheet(); ui.tab="pantry"; ui.loc="all"; commit(); toast(`${n} items added`,true);
+    setTimeout(()=>enrichItems(),800);
   }
   else if(a==="addLow"){ S.items.filter(i=>i.minQty!=null&&i.qty<=i.minQty).forEach(i=>toList(i.name)); commit(); }
   else if(a==="clearDone"){ S.shopping=S.shopping.filter(s=>!s.done); commit(); }
   else if(a==="stock"){
-    const done=S.shopping.filter(s=>s.done);
+    snapshot(); const done=S.shopping.filter(s=>s.done);
     done.forEach(s=>{ const m=Object.values(S.barcodes).find(b=>same(b.name,s.name)); const ex=S.items.find(i=>same(i.name,s.name));
       if(ex) ex.qty=Math.round((ex.qty+(m?.qty||1))*1000)/1000;
       else { const gs=KL.guess(s.name); const cat=m?.category||gs.category; const days=m?.shelfDays??gs.shelfDays;
-        addItem({name:s.name,brand:m?.brand||"",qty:m?.qty||1,unit:m?.unit||"pcs",category:cat,location:m?.location||gs.location,image:m?.image||null,photo:m?.photo||null,base:gs.base,expiry:days?addDays(days):null}); } });
-    S.shopping=S.shopping.filter(s=>!s.done); commit(); toast(`${done.length} items put away`);
+        addItem({name:s.name,brand:m?.brand||"",qty:m?.qty||1,unit:m?.unit||"pcs",category:cat,location:m?.location||gs.location,image:m?.image||null,photo:m?.photo||null,base:gs.base,expiry:autoExp(days)}); } });
+    S.shopping=S.shopping.filter(s=>!s.done); commit(); toast(`${done.length} items put away`,true); setTimeout(()=>enrichItems(),800);
   }
   else if(a==="shareList"){ shareText("Shopping list",S.shopping.filter(s=>!s.done).map(s=>"• "+s.name+(s.qty?" ("+s.qty+")":"")).join("\n")); }
   else if(a==="exportCsv"){ const name=`kitchen-inventory-${iso(today())}.csv`; if(!saveFile(name,KL.toCSV(S.items))) shareText("Kitchen inventory",KL.toCSV(S.items)); }
   else if(a==="shareCsv"){ if(N) N.shareFile(`kitchen-inventory-${iso(today())}.csv`,KL.toCSV(S.items)); else shareText("Kitchen inventory",KL.toCSV(S.items)); }
-  else if(a==="importCsv"){ const txt=await pickCsv(); if(!txt) return; importPreview=KL.csvToItems(txt,iso(today())); showImport(); }
+  else if(a==="importCsv"){ const txt=await pickCsv(); if(!txt) return; if(/^\s*\{/.test(txt.replace(/^\uFEFF/,""))){ toast("That's a backup file. Use Settings → Restore a backup."); return; } importPreview=KL.csvToItems(txt,iso(today())); showImport(); }
   else if(a==="doImport"){
-    const mode=(layer.querySelector('input[name="imode"]:checked')||{}).value||"merge";
+    snapshot(); const mode=(layer.querySelector('input[name="imode"]:checked')||{}).value||"merge";
     if(mode==="replace") S.items=[];
     importPreview.items.forEach(n=>{ addItem(n); if(n.barcode&&!S.barcodes[n.barcode]) rememberBarcode(n); });
-    const n=importPreview.items.length; importPreview=null; closeSheet(); ui.tab="pantry"; ui.loc="all"; commit(); toast(`${n} items imported`);
-    setTimeout(enrichItems,1200);
+    const n=importPreview.items.length; importPreview=null; closeSheet(); ui.tab="pantry"; ui.loc="all"; commit(); toast(`${n} items imported`,true);
+    setTimeout(()=>enrichItems(),1200);
   }
 });
 document.addEventListener("change",e=>{
   const t=e.target;
   if(t.dataset.toggle){ const s=S.shopping.find(x=>x.id===t.dataset.toggle); if(s){ s.done=t.checked; commit(); } return; }
-  if(t.id==="keepScan"){ S.keepScanning=t.checked; save(); return; }
+  if(t.dataset.set){ onSetting(t); return; }
+  if(t.name==="sortBy"||t.name==="groupBy"){ S.settings[t.name==="sortBy"?"sort":"group"]=t.value; save(); render(); return; }
+  if(t.name==="rnames"){ S.settings.receiptNames=t.value; save();
+    const keep={}; layer.querySelectorAll("[data-keep]").forEach(b=>keep[b.dataset.keep]=b.checked);
+    receiptRows.forEach(x=>{ const c=layer.querySelector(`[data-rcat="${x._id}"]`), l=layer.querySelector(`[data-rloc="${x._id}"]`); if(c) x.category=c.value; if(l) x.location=l.value; });
+    const sc=layer.querySelector(".sheet")?.scrollTop||0; showReceipt(); layer.querySelectorAll("[data-keep]").forEach(b=>b.checked=keep[b.dataset.keep]!==false); const sh=layer.querySelector(".sheet"); if(sh) sh.scrollTop=sc; return; }
   if(t.id==="pDiet"||t.id==="pMiss"){ readPrefs(); save(); }
 });
 document.addEventListener("input",e=>{
@@ -762,6 +1013,9 @@ function readPrefs(){ const g=id=>document.getElementById(id); if(!g("pDiet")) r
 window.onBack=()=>{ if(layer.innerHTML){ closeSheet(); return true; } if(ui.tab!=="pantry"){ ui.tab="pantry"; render(); return true; } return false; };
 
 load(); render();
+syncReminders();
+try{ if(N&&N.takeOpen&&N.takeOpen()==="soon"){ ui.loc="soon"; render(); } }catch(e){}
+setTimeout(()=>enrichItems(),2500);
 })();
 </script>
 </body>

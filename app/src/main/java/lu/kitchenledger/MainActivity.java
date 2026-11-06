@@ -96,6 +96,10 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
 
+    private final ActivityResultLauncher<String> notifPermission =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted ->
+                    send("notif", Boolean.TRUE.equals(granted) ? "1" : "0"));
+
     private final ActivityResultLauncher<String[]> openCsv =
             registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
                 if (uri == null) { send("csv", ""); return; }
@@ -140,6 +144,7 @@ public class MainActivity extends AppCompatActivity {
         web.addJavascriptInterface(new Bridge(), "Android");
 
         if (savedInstanceState != null) web.restoreState(savedInstanceState);
+        pendingOpen = getIntent() != null ? getIntent().getStringExtra("open") : null;
         if (web.getUrl() == null) web.loadUrl(START_URL);
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
@@ -154,6 +159,15 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
         });
+    }
+
+    private String pendingOpen;
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        String o = intent.getStringExtra("open");
+        if (o != null) send("open", o);
     }
 
     @Override
@@ -183,13 +197,48 @@ public class MainActivity extends AppCompatActivity {
         @JavascriptInterface
         public boolean isNative() { return true; }
 
+        /** Called by the page once it is ready; returns a screen to open (from a notification) or "". */
         @JavascriptInterface
-        public void scanBarcode() {
+        public String takeOpen() { String o = pendingOpen; pendingOpen = null; return o == null ? "" : o; }
+
+        @JavascriptInterface
+        public String appVersion() {
+            try { return getPackageManager().getPackageInfo(getPackageName(), 0).versionName; }
+            catch (Exception e) { return ""; }
+        }
+
+        @JavascriptInterface
+        public void setReminders(String json) { Reminders.setConfig(MainActivity.this, json); }
+
+        @JavascriptInterface
+        public void testReminder() { Reminders.notifyNow(MainActivity.this, true); }
+
+        @JavascriptInterface
+        public boolean notificationsAllowed() {
+            if (Build.VERSION.SDK_INT < 33) return androidx.core.app.NotificationManagerCompat.from(MainActivity.this).areNotificationsEnabled();
+            return ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED;
+        }
+
+        @JavascriptInterface
+        public void requestNotifications() {
+            runOnUiThread(() -> {
+                if (Build.VERSION.SDK_INT >= 33 && !notificationsAllowed()) notifPermission.launch(Manifest.permission.POST_NOTIFICATIONS);
+                else send("notif", notificationsAllowed() ? "1" : "0");
+            });
+        }
+
+        @JavascriptInterface
+        public void vibrate() {
+            runOnUiThread(() -> { if (web != null) web.performHapticFeedback(android.view.HapticFeedbackConstants.CONFIRM); });
+        }
+
+        @JavascriptInterface
+        public void scanBarcode(boolean beep) {
             runOnUiThread(() -> {
                 ScanOptions o = new ScanOptions();
                 o.setDesiredBarcodeFormats(ScanOptions.PRODUCT_CODE_TYPES);
                 o.setPrompt("Point the camera at a barcode");
-                o.setBeepEnabled(true);
+                o.setBeepEnabled(beep);
                 o.setOrientationLocked(false);
                 scanLauncher.launch(o);
             });
@@ -417,18 +466,28 @@ public class MainActivity extends AppCompatActivity {
         try {
             ContentValues cv = new ContentValues();
             cv.put(MediaStore.MediaColumns.DISPLAY_NAME, name);
-            cv.put(MediaStore.MediaColumns.MIME_TYPE, "text/csv");
+            cv.put(MediaStore.MediaColumns.MIME_TYPE, mimeFor(name));
             cv.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
             Uri uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv);
             if (uri == null) throw new IOException("insert failed");
             try (OutputStream out = getContentResolver().openOutputStream(uri)) {
                 if (out == null) throw new IOException("no output");
-                out.write(("﻿" + content).getBytes(StandardCharsets.UTF_8));
+                out.write(bytesFor(name, content));
             }
             send("toast", "Saved to Downloads: " + name);
         } catch (Exception e) {
             shareAsFile(name, content);
         }
+    }
+
+    private static String mimeFor(String name) {
+        return name.endsWith(".json") ? "application/json" : "text/csv";
+    }
+
+    /** CSV gets a byte-order mark so Excel opens accents correctly; JSON stays plain. */
+    private static byte[] bytesFor(String name, String content) {
+        String s = name.endsWith(".json") ? content : "\uFEFF" + content;
+        return s.getBytes(StandardCharsets.UTF_8);
     }
 
     private void shareAsFile(String name, String content) {
@@ -437,15 +496,15 @@ public class MainActivity extends AppCompatActivity {
             if (!dir.exists() && !dir.mkdirs()) throw new IOException("no cache dir");
             File f = new File(dir, name);
             try (OutputStream out = new FileOutputStream(f)) {
-                out.write(("﻿" + content).getBytes(StandardCharsets.UTF_8));
+                out.write(bytesFor(name, content));
             }
             Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".files", f);
             Intent i = new Intent(Intent.ACTION_SEND);
-            i.setType("text/csv");
+            i.setType(mimeFor(name));
             i.putExtra(Intent.EXTRA_STREAM, uri);
             i.putExtra(Intent.EXTRA_SUBJECT, name);
             i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            runOnUiThread(() -> startActivity(Intent.createChooser(i, "Save or send CSV")));
+            runOnUiThread(() -> startActivity(Intent.createChooser(i, "Save or send " + name)));
         } catch (Exception e) {
             toast("Couldn't export the file.");
         }

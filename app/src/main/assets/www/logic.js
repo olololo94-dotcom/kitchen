@@ -52,7 +52,8 @@ Coffee|Drinks|pantry|270|coffee,cafe,kaffee,espresso,capsules
 Tea|Drinks|pantry|540|tea,the vert,the noir,tee,infusion
 Water|Drinks|pantry|365|water,eau,wasser,rosport,viva,spa
 Juice|Drinks|fridge|10|juice,jus,saft,orangensaft,jus d orange,orange juice,jus de pomme,apple juice,jus multifruits
-Soda|Drinks|pantry|270|cola,coke,fanta,sprite,limonade,soda,ice tea
+Iced tea|Drinks|pantry|270|ice tea,iced tea,the glace,eistee,lipton,fuze tea
+Soda|Drinks|pantry|270|cola,coke,fanta,sprite,limonade,soda
 Beer|Drinks|pantry|180|beer,biere,bier,bofferding,diekirch,battin
 Wine|Drinks|pantry|730|wine,vin,wein,cremant,riesling,rivaner,pinot,auxerrois,elbling
 Tomatoes|Produce|fridge|6|tomato,tomatoes,tomate,tomates,tomaten,cherry tomatoes
@@ -74,7 +75,7 @@ Leeks|Produce|fridge|10|leek,leeks,poireau,poireaux,lauch,porree
 Mushrooms|Produce|fridge|4|mushroom,mushrooms,champignon,champignons,pilze,schwammen
 Green beans|Produce|fridge|5|green beans,haricots verts,grune bohnen,bounen
 Peas|Frozen|freezer|240|peas,petits pois,erbsen
-Corn|Canned & jars|pantry|700|corn,sweetcorn,mais
+Corn|Canned & jars|pantry|700|corn,sweetcorn,mais,mais doux
 Avocado|Produce|pantry|4|avocado,avocat,avocats
 Lemons|Produce|fridge|21|lemon,lemons,citron,citrons,zitrone,zitronen,lime,citron vert
 Apples|Produce|fridge|30|apple,apples,pomme,pommes,apfel,aepel,jonagold,elstar,pink lady,gala
@@ -103,23 +104,25 @@ Jam|Canned & jars|pantry|365|jam,confiture,marmelade,konfiture
 Peanut butter|Canned & jars|pantry|270|peanut butter,beurre de cacahuete,erdnussbutter
 Chocolate spread|Canned & jars|pantry|270|nutella,pate a tartiner,nuss nougat
 Chocolate|Snacks|pantry|270|chocolate,chocolat,schokolade,schoko
-Snack bar|Snacks|pantry|180|peanut bar,cereal bar,chocolate bar,muesli bar,protein bar,riegel,snack,snacks,nougat,haribo,gummies,bonbons,candy,croky,popcorn
+Snack bar|Snacks|pantry|180|big hit,peanut bar,cereal bar,chocolate bar,muesli bar,protein bar,riegel,snack,snacks,nougat,haribo,gummies,bonbons,candy,croky,popcorn
 Energy drink|Drinks|pantry|365|energy drink,red bull,monster energy
 Kimchi|Canned & jars|fridge|60|kimchi,sauerkraut,choucroute,pickles,cornichons,gurken
 Ready meal|Other|fridge|3|oven dish,ready meal,plat cuisine,fertiggericht,lasagne bolognese
 Biscuits|Snacks|pantry|180|biscuit,biscuits,cookies,kekse,gaufrettes,speculoos
 Crisps|Snacks|pantry|120|crisps,chips,pringles
-Nuts|Snacks|pantry|180|nuts,noix,nusse,almonds,amandes,mandeln,cashew,peanuts,cacahuetes
+Nuts|Snacks|pantry|180|nuts,noix,nusse,almonds,amandes,mandeln,cashew,peanuts,cacahuetes,cacahuete,melange aux noix,studentenfutter,pistaches,noisettes
 Ice cream|Frozen|freezer|180|ice cream,glace,eis,speiseeis,magnum
 Frozen pizza|Frozen|freezer|180|pizza
 Fries|Frozen|freezer|240|fries,frites,pommes frites
 Frozen vegetables|Frozen|freezer|240|frozen vegetables,legumes surgeles,tiefkuhlgemuse,surgeles
+Mixed vegetables|Produce|fridge|5|julienne de legumes,julienne,legumes,poelee,wok mix,suppengemuse,ratatouille
+Veggie burger|Meat & fish|fridge|10|veggie,vegan burger,veggie burger,boulettes vegetales,falafel,beyond,quorn,boules burger
 Tofu|Meat & fish|fridge|10|tofu,tempeh,seitan
 Hummus|Dairy|fridge|7|hummus,houmous
-Toilet paper|Household|pantry|0|toilet paper,papier toilette,toilettenpapier,klopapier
+Toilet paper|Household|pantry|0|toilet paper,papier toilette,toilettenpapier,klopapier,scottex,lotus confort,moltonel,cotonelle,papier wc,pq
 Dish soap|Household|pantry|0|dish soap,liquide vaisselle,spulmittel,dreft,pril
 Detergent|Household|pantry|0|detergent,lessive,waschmittel,ariel,persil megaperls
-Kitchen roll|Household|pantry|0|kitchen roll,essuie tout,kuchenrolle,sopalin
+Kitchen roll|Household|pantry|0|kitchen roll,essuie tout,kuchenrolle,sopalin,essuie tout 2plf,kuchentucher,zewa
 Bin bags|Household|pantry|0|bin bags,sacs poubelle,mullbeutel,trash bags,freezer bags,food bags,gefrierbeutel,sacs congelation,cling film,aluminium foil,alufolie,papier alu
 `;
   function norm(s) {
@@ -210,8 +213,9 @@ Bin bags|Household|pantry|0|bin bags,sacs poubelle,mullbeutel,trash bags,freezer
   }
 
   /* ---------- receipts ---------- */
-  const SKIP = /\b(total|totaal|somme|summe|sum|subtotal|sous total|zwischensumme|tva|mwst|vat|ust|tax|carte|card|visa|mastercard|maestro|bancontact|payconiq|digicash|cb|espece|especes|bar|cash|rendu|wechselgeld|change|monnaie|pfand|consigne|leergut|vidange|remise|rabatt|reduction|discount|promo|bon|coupon|points|fidelite|payback|ticket|kassenbon|merci|danke|thank|bienvenue|caisse|kasse|kassier|caissier|tel|tél|www|http|siret|rcs|tva intracom|lu\d|iban|date|heure|uhrzeit|article|articles|artikel|nombre|anzahl|sac|tute|tasche|bag|beutel|euro|eur total|a payer|zu zahlen|net|brut|exo|taux)\b/;
-  const PRICE_RE = /(-?\d{1,4}[.,]\d{2})\s*(?:€|eur)?\s*(?:[a-d]|[a-d]\d|\*|\d)?\s*$/i;
+  const SKIP = /\b(total|totaal|somme|summe|sum|subtotal|sous total|zwischensumme|tva|mwst|vat|ust|tax|carte|card|visa|mastercard|maestro|bancontact|payconiq|digicash|cb|espece|especes|bargeld|cash|rendu|wechselgeld|change|monnaie|pfand|consigne|leergut|vidange|remise|rabatt|reduction|discount|promo|bon|coupon|points|fidelite|payback|ticket|kassenbon|merci|danke|thank|bienvenue|caisse|kasse|kassier|caissier|tel|tél|www|http|siret|rcs|tva intracom|lu\d|iban|date|heure|uhrzeit|article|articles|artikel|nombre|anzahl|sac|tute|tasche|bag|beutel|euro|eur total|a payer|zu zahlen|net|brut|exo|taux|montant|paiement|payment|zahlung|terminal|commercant|sequence|trace|aid|cvm|transaction|autorisation|signature|duplicata|client|kunde|description|beschreibung|libelle)\b/;
+  const PRICE_RE = /(-?\d{1,4}\s?[.,]\s?\d{2})\s*(?:€|eur)?\s*(?:[a-z]{1,2}\d?|\*{1,2}|\d)?\s*$/i;
+  const END_RE = /^(total|totaal|sous total|somme|summe|zu zahlen|a payer|nombre|anzahl|montant total|total ttc|gesamt|betrag)\b/;
   /* lines: [{text, top, bottom, left}] from on-device text recognition */
   function groupRows(lines) {
     const L = lines.filter(l => l && l.text && l.text.trim()).map(l => ({ ...l, mid: (l.top + l.bottom) / 2, h: Math.max(1, l.bottom - l.top) }));
@@ -229,12 +233,15 @@ Bin bags|Household|pantry|0|bin bags,sacs poubelle,mullbeutel,trash bags,freezer
     const rows = Array.isArray(input) && input.length && typeof input[0] === "object" ? groupRows(input) : String(input || "").split(/\r?\n/);
     const items = []; let pendingName = null, pendingQty = 1, store = null, date = null;
     const STORES = ["cactus", "delhaize", "auchan", "aldi", "lidl", "match", "colruyt", "carrefour", "cora", "naturata", "smatch", "shop", "pall center", "ikea", "rewe", "intermarche"];
+    for (const raw of rows) {
+      const dm = String(raw).match(/\b(\d{1,2})[.\/-](\d{1,2})[.\/-](20\d{2}|\d{2})\b/);
+      if (dm && +dm[2] <= 12 && +dm[1] <= 31) { const y = dm[3].length === 2 ? "20" + dm[3] : dm[3]; date = `${y}-${dm[2].padStart(2, "0")}-${dm[1].padStart(2, "0")}`; break; }
+    }
     for (let raw of rows) {
       const line = raw.replace(/\s+/g, " ").trim(); if (!line) continue;
       const n = norm(line);
       if (!store) { const s = STORES.find(s => n.includes(s)); if (s) { store = titleCase(s); continue; } }
-      const dm = line.match(/\b(\d{1,2})[.\/-](\d{1,2})[.\/-](20\d{2}|\d{2})\b/);
-      if (dm && !date) { const y = dm[3].length === 2 ? "20" + dm[3] : dm[3]; date = `${y}-${dm[2].padStart(2, "0")}-${dm[1].padStart(2, "0")}`; }
+      if (items.length && END_RE.test(n)) break;
       if (SKIP.test(n)) { pendingName = null; continue; }
       const qm = line.match(/^(\d{1,2})\s*[xX*]\s*(\d{1,4}[.,]\d{2})?/);
       const wm = line.match(/(\d+[.,]\d{1,3})\s*kg\s*[xX*@]/i);
@@ -245,11 +252,11 @@ Bin bags|Household|pantry|0|bin bags,sacs poubelle,mullbeutel,trash bags,freezer
         .replace(/\b\d{6,14}\b/g, "").replace(/\d+[.,]\d{1,3}\s*(kg|€)?\s*[xX*@].*$/i, "").replace(/[*#]+/g, " ").replace(/\s+/g, " ").trim();
       const letters = (namePart.match(/[a-zA-ZÀ-ÿ]/g) || []).length;
       if (pm && letters >= 3) {
-        const price = Number(pm[1].replace(",", "."));
+        const price = Number(pm[1].replace(/\s/g, "").replace(",", "."));
         if (price <= 0) { pendingName = null; continue; }
         pushItem(namePart, price, wm ? Number(wm[1].replace(",", ".")) : null);
       } else if (pm && pendingName) {
-        pushItem(pendingName, Number(pm[1].replace(",", ".")), null); pendingName = null;
+        pushItem(pendingName, Number(pm[1].replace(/\s/g, "").replace(",", ".")), null); pendingName = null;
       } else if (!pm && letters >= 3 && letters / namePart.length > 0.5) {
         pendingName = namePart;
       }
@@ -260,12 +267,12 @@ Bin bags|Household|pantry|0|bin bags,sacs poubelle,mullbeutel,trash bags,freezer
       const pq = parseQuantity(rawName);
       let qty = pendingQty, unit = "pcs";
       if (kg) { qty = kg; unit = "kg"; } else if (pq && pq.unit !== "pcs" && pendingQty === 1) { qty = pq.qty; unit = pq.unit; }
-      items.push({ name: g.base || clean, original: clean, qty, unit, category: g.category, location: g.location, shelfDays: g.shelfDays, price, matched: !!g.base });
+      items.push({ name: clean, english: g.base || null, original: clean, qty, unit, category: g.category, location: g.location, shelfDays: g.shelfDays, price, matched: !!g.base });
       pendingQty = 1;
     }
     const merged = [];
     for (const it of items) {
-      const m = merged.find(x => x.name === it.name && x.unit === it.unit && x.unit === "pcs");
+      const m = merged.find(x => x.original === it.original && x.unit === it.unit);
       if (m) { m.qty += it.qty; m.price = Math.round((m.price + it.price) * 100) / 100; } else merged.push(it);
     }
     return { store, date, items: merged };
