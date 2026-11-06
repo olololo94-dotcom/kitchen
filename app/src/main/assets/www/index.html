@@ -927,7 +927,7 @@ function settingsSheet(){
     ${examples?btn("delExamples",`Remove ${examples} example items`):""}
     ${ui.confirmWipe?`<div class="set danger" style="flex-wrap:wrap"><span class="lbl"><span>Delete all ${S.items.length} items and the shopping list?</span>${S.sync?` <small>This also deletes them for everyone in your household.</small>`:""}</span><span class="row"><button class="btn small" data-act="wipeNo">Cancel</button><button class="btn small primary" style="background:var(--bad);border-color:var(--bad)" data-act="wipeYes">Delete</button></span></div>`:btn("wipe","Delete everything",null,"danger")}
   </div></div>
-  <p class="note" style="text-align:center">Kitchen Ledger ${esc(ver)} · Your data stays on this phone.<br>Product data: Open Food Facts · Recipes: TheMealDB</p>`);
+  <p class="note" style="text-align:center">Kitchen Ledger ${esc(ver)} · ${S.sync?"Your kitchen syncs with your household.":"Your data stays on this phone."}<br>Product data: Open Food Facts · Recipes: TheMealDB</p>`);
 }
 let hh={mode:null,err:"",busy:false,confirmLeave:false};
 function householdHTML(){
