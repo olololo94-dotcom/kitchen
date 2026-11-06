@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Kitchen Ledger</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kitchen">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#F3F5F1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121816" media="(prefers-color-scheme: dark)">
 <style>
 /* Layout: one-column phone app, sticky header with pantry summary, bottom tab bar, slide-up sheets. */
 :root{
@@ -118,6 +127,15 @@ nav.tabs .badge{position:absolute;top:5px;left:calc(50% + 6px);min-width:17px;he
 .scrim{position:fixed;inset:0;z-index:30;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--bg);width:100%;max-width:640px;max-height:92vh;overflow-y:auto;border-radius:20px 20px 0 0;padding:8px 16px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px;animation:up .22s ease-out}
 @keyframes up{from{transform:translateY(30px);opacity:.6}}
+.scanner{position:fixed;inset:0;z-index:60;background:#000;display:flex;flex-direction:column}
+.scanner video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.scan-frame{position:absolute;left:10%;right:10%;top:32%;height:22%;border:3px solid rgba(255,255,255,.9);border-radius:16px;box-shadow:0 0 0 100vmax rgba(0,0,0,.45)}
+.scan-frame i{position:absolute;left:6%;right:6%;top:50%;height:2px;background:#ff5a4f;box-shadow:0 0 8px #ff5a4f}
+.scan-ui{position:absolute;left:0;right:0;bottom:0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px;background:linear-gradient(transparent,rgba(0,0,0,.7) 30%)}
+.scan-msg{color:#fff;text-align:center;margin:0;font-weight:600}
+.scan-ui .row>.btn{flex:1 1 130px}
+.install{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
+.install p{margin:0;font-size:13.5px}
 .sheet>*{flex-shrink:0}
 .sheet{-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .sheet .stick{position:sticky;bottom:calc(-20px - env(safe-area-inset-bottom,0px));margin:0 -16px calc(-20px - env(safe-area-inset-bottom,0px));padding:12px 16px calc(14px + env(safe-area-inset-bottom,0px));background:linear-gradient(to bottom,transparent,var(--bg) 14px);z-index:2}
@@ -203,12 +221,16 @@ nav.tabs .badge{position:absolute;top:5px;left:calc(50% + 6px);min-width:17px;he
 <nav class="tabs" aria-label="Sections"><div class="in" id="tabs"></div></nav>
 <div id="layer"></div>
 <input type="file" id="fbImage" accept="image/*" hidden>
+<input type="file" id="fbCamera" accept="image/*" capture="environment" hidden>
 <input type="file" id="fbCsv" accept=".csv,.xlsx,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
 
 <script src="logic.js"></script>
 <script src="i18n.js"></script>
 <script src="lang-de.js"></script>
 <script src="lang-fr.js"></script>
+<script src="web.js"></script>
+<script src="config.js"></script>
+<script src="sync.js"></script>
 <script>
 (() => {
 const {CATS,UNITS,CAT_DAYS} = KL;
@@ -285,10 +307,11 @@ function syncReminders(){
 }
 /* Undo: snapshot the whole state before a change */
 let undoSnap=null;
-function snapshot(){ undoSnap=JSON.stringify(S); }
-function undo(){ if(!undoSnap) return; S=JSON.parse(undoSnap); undoSnap=null; save(); render(); toast("Undone"); }
+function snapshot(){ const {sync,...rest}=S; undoSnap=JSON.stringify(rest); }
+function undo(){ if(!undoSnap) return; const cur=S.sync; S=JSON.parse(undoSnap); if(cur) S.sync=cur; undoSnap=null; save(); render(); toast("Undone"); }
 let saveWarned=false;
-function save(){ syncReminders(); try{ localStorage.setItem(LS,JSON.stringify(S)); }catch(e){ if(!saveWarned){ saveWarned=true; toast("Phone storage for the app is full. Remove some photos or export a backup."); } } }
+function save(){ saveQuiet(); if(window.KLSync) KLSync.schedule(); }
+function saveQuiet(){ syncReminders(); try{ localStorage.setItem(LS,JSON.stringify(S)); }catch(e){ if(!saveWarned){ saveWarned=true; toast("Phone storage for the app is full. Remove some photos or export a backup."); } } }
 function commit(){ save(); render(); }
 
 /* ---------- network ---------- */
@@ -310,24 +333,25 @@ const offline = () => navigator.onLine===false;
 const pending = {};
 window.onNative = (type,payload) => { const f=pending[type]; if(f){ delete pending[type]; f(payload); } else if(type==="toast") toast(payload); else if(type==="open"&&payload==="soon"){ closeSheet(); ui.tab="pantry"; ui.loc="soon"; render(); } };
 function nativeCall(type,fn){ return new Promise(res=>{ pending[type]=res; fn(); }); }
+const WP=window.WebPlatform;
 function scanBarcode(){
   if(N) return nativeCall("barcode",()=>N.scanBarcode(ST().beep!==false));
-  return new Promise(res=>{
-    sheet(`<div class="sheet-head"><h2>Enter barcode</h2><button class="x" data-close aria-label="Close">×</button></div>
-      <p class="note">The camera scanner works in the Android app. Here you can type the digits under the barcode.</p>
-      <form id="bcForm" class="row"><input class="field" id="bcIn" inputmode="numeric" placeholder="e.g. 5410673000013" style="flex:1 1 200px"><button class="btn primary" type="submit">Look up</button></form>`);
-    document.getElementById("bcForm").onsubmit=e=>{ e.preventDefault(); res(document.getElementById("bcIn").value.trim()); };
-  });
+  return WP.scanBarcode({beep:ST().beep!==false});
 }
 function pickPhoto(source){ /* -> dataURL thumbnail or "" */
   if(N) return nativeCall("photo",()=>N.takePhoto(source));
-  return browserFile("fbImage").then(f=>f?thumbFromFile(f):"");
+  return browserFile(source==="camera"?"fbCamera":"fbImage").then(f=>f?thumbFromFile(f):"");
 }
-function readReceipt(source){ /* -> lines JSON string, or "" */
+async function readReceipt(source){ /* -> lines JSON string, "ERR:..." or "" */
   if(N) return nativeCall("ocr",()=>N.readReceipt(source));
-  return Promise.resolve(null);
+  const f=await browserFile(source==="camera"?"fbCamera":"fbImage"); if(!f) return "";
+  busySheet("Reading your receipt…");
+  try{
+    const lines=await WP.ocr(f,pct=>{ const el=layer.querySelector(".thinking"); if(el) el.lastChild.nodeValue=" "+I18N.tr("Reading your receipt…")+" "+pct+"%"; });
+    return JSON.stringify(lines);
+  }catch(e){ return "ERR:"+I18N.tr("Couldn't read the receipt. Check your internet the first time, then try again."); }
 }
-function pickCsv(){ if(N) return nativeCall("csv",()=>N.pickCsv()); return browserFile("fbCsv").then(f=>f?f.text():""); }
+function pickCsv(){ if(N) return nativeCall("csv",()=>N.pickCsv()); return browserFile("fbCsv").then(f=>f?WP.readImportFile(f).catch(()=>{ toast("Couldn't open that file."); return ""; }):""); }
 function browserFile(id){ return new Promise(res=>{ const el=document.getElementById(id); el.value=""; el.onchange=()=>res(el.files[0]||null); el.click(); }); }
 async function thumbFromFile(file){
   const url=URL.createObjectURL(file);
@@ -339,11 +363,11 @@ async function thumbFromFile(file){
 }
 function saveFile(name,text){
   if(N){ N.saveFile(name,text); return true; }
-  return false;
+  return WP.saveFile(name,text);
 }
 function shareText(title,text){
   if(N){ N.shareText(title,text); return; }
-  navigator.clipboard?.writeText(text).then(()=>toast("Copied"),()=>toast("Couldn't copy"));
+  WP.shareText(title,text).then(r=>{ if(r==="copied") toast("Copied"); else if(r==="fail") toast("Couldn't copy"); });
 }
 
 /* ---------- derived ---------- */
@@ -384,6 +408,10 @@ function render(){
   app.innerHTML=({pantry:vPantry,add:vAdd,recipes:vRecipes,shop:vShop})[ui.tab]();
 }
 
+function installHint(){
+  return `<div class="install"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;color:var(--accent)"><path d="M12 3v12M8 7l4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>
+    <p><b>Install on your iPhone:</b> <span>tap the Share button in Safari, then “Add to Home Screen”.</span></p><button class="x" data-act="hideInstall" aria-label="Close">×</button></div>`;
+}
 function picProgress(){
   if(!ui.pic) return "";
   const {done,total,label}=ui.pic;
@@ -410,6 +438,7 @@ function vPantry(){
   let html=`<section class="view"><div><div class="search"><input id="q" type="search" placeholder="Search ${S.items.length} items" value="${esc(ui.q)}" autocomplete="off">${sortSel}</div>
     <div class="chips">${chip("all","All")}${chip("soon","Use soon")}${chip("fridge","Fridge")}${chip("freezer","Freezer")}${chip("pantry","Pantry")}</div></div>`;
   html+=picProgress();
+  if(WP&&WP.isIOS&&!WP.standalone&&!N&&!S.installHidden) html+=installHint();
   if(!items.length) html+=`<div class="empty"><p>${ui.loc==="soon"?`Nothing expires in the next ${W()} days.`:"Nothing matches."}</p></div>`;
   const row=i=>`
       <div class="item">${thumbHTML(i)}<button class="main" data-edit="${i.id}"><span class="name" translate="no">${esc(i.name)}</span>
@@ -609,7 +638,7 @@ async function offSearch(q,size){
 async function scanFlow(){
   const code=await scanBarcode();
   if(!code){ closeSheet(); return; }
-  const again=()=>{ if(ST().keepScanning&&N) setTimeout(scanFlow,350); };
+  const again=()=>{ if(ST().keepScanning) setTimeout(scanFlow,350); };
   const known=S.barcodes[code];
   if(known){
     snapshot();
@@ -634,7 +663,6 @@ async function scanFlow(){
 
 let receiptRows=[];
 async function receiptFlow(src){
-  if(!N){ sheet(`<div class="sheet-head"><h2>Receipt</h2><button class="x" data-close aria-label="Close">×</button></div><p class="note">Receipt reading works in the Android app.</p>`); return; }
   const raw=await readReceipt(src);
   if(!raw){ return; }
   if(raw.startsWith("ERR:")){ sheet(`<div class="sheet-head"><h2>Receipt</h2><button class="x" data-close aria-label="Close">×</button></div><p class="err">${esc(raw.slice(4))}</p>`); return; }
@@ -866,6 +894,7 @@ function settingsSheet(){
   const examples=S.items.filter(isEx).length;
   const ver=N&&N.appVersion?N.appVersion():"";
   sheet(`<div class="sheet-head"><h2>Settings</h2><button class="x" data-close aria-label="Close">×</button></div>
+  ${window.KLSync&&KLSync.enabled?householdHTML():""}
   <div class="set-group"><div class="set-title">Kitchen</div><div class="set-list">
     ${sel("warnDays","Warn me before food expires",[[1,"1 day before"],[2,"2 days before"],[3,"3 days before"],[5,"5 days before"],[7,"1 week before"]])}
     ${sel("defaultLoc","New items go to",[["fridge","Fridge"],["freezer","Freezer"],["pantry","Pantry"]],"Recognized foods still go where they belong")}
@@ -896,10 +925,41 @@ function settingsSheet(){
     ${btn("backup","Save a full backup","Kitchen, shopping list, settings and scanned barcodes")}
     ${btn("restore","Restore a backup")}
     ${examples?btn("delExamples",`Remove ${examples} example items`):""}
-    ${ui.confirmWipe?`<div class="set danger" style="flex-wrap:wrap"><span class="lbl">Delete all ${S.items.length} items and the shopping list?</span><span class="row"><button class="btn small" data-act="wipeNo">Cancel</button><button class="btn small primary" style="background:var(--bad);border-color:var(--bad)" data-act="wipeYes">Delete</button></span></div>`:btn("wipe","Delete everything",null,"danger")}
+    ${ui.confirmWipe?`<div class="set danger" style="flex-wrap:wrap"><span class="lbl"><span>Delete all ${S.items.length} items and the shopping list?</span>${S.sync?` <small>This also deletes them for everyone in your household.</small>`:""}</span><span class="row"><button class="btn small" data-act="wipeNo">Cancel</button><button class="btn small primary" style="background:var(--bad);border-color:var(--bad)" data-act="wipeYes">Delete</button></span></div>`:btn("wipe","Delete everything",null,"danger")}
   </div></div>
-  <p class="note" style="text-align:center">Kitchen Ledger ${esc(ver)} · Your data stays on this phone.<br>Product data: Open Food Facts · Recipes: TheMealDB</p>`);
+  <p class="note" style="text-align:center">Kitchen Ledger ${esc(ver)} · ${S.sync?"Your kitchen syncs with your household.":"Your data stays on this phone."}<br>Product data: Open Food Facts · Recipes: TheMealDB</p>`);
 }
+let hh={mode:null,err:"",busy:false,confirmLeave:false};
+function householdHTML(){
+  const sy=S.sync, st=KLSync.status;
+  let body;
+  if(!sy){
+    if(hh.mode==="join") body=`<div class="card" style="border:0;border-radius:0">
+      <label class="set-title" for="hhCode" style="margin:0">Household code</label>
+      <input class="field" id="hhCode" placeholder="e.g. K7MP-2QX9-HT4C" autocomplete="off" autocapitalize="characters" style="font:600 18px var(--f-mono);letter-spacing:.08em">
+      <div class="seg" role="radiogroup"><label><input type="radio" name="hhMode" value="merge" checked>Keep my items too</label><label><input type="radio" name="hhMode" value="replace">Only the household's</label></div>
+      ${hh.err?`<p class="err">${esc(hh.err)}</p>`:""}
+      <div class="row"><button class="btn ghost" data-act="hhCancel">Cancel</button><button class="btn primary" data-act="hhJoin" ${hh.busy?"disabled":""}>${hh.busy?"Joining…":"Join"}</button></div></div>`;
+    else body=`<div class="set" style="flex-direction:column;align-items:stretch;gap:10px"><span class="lbl">Share your kitchen<small>Share the kitchen and shopping list with your partner or family. Changes show up on every phone.</small></span>
+      ${hh.err?`<p class="err">${esc(hh.err)}</p>`:""}
+      <div class="row"><button class="btn primary" data-act="hhCreate" ${hh.busy?"disabled":""}>${hh.busy?"Creating…":"Create a household"}</button><button class="btn" data-act="hhJoinOpen">Join with a code</button></div></div>`;
+  } else {
+    const when=sy.lastOk?new Date(sy.lastOk).toLocaleTimeString(I18N.lang==="en"?"en-GB":I18N.lang+"-LU",{hour:"2-digit",minute:"2-digit"}):"";
+    const line=st.state==="syncing"?`<span>Syncing…</span>`:st.state==="offline"?`<span>Offline. Changes sync when you're back online.</span>`:st.state==="error"?`<span class="err" style="font-size:12.5px">${st.error==="permission"?"The household database refused access. Check the Firebase rules.":"Couldn't sync. It will try again."}</span>`:(when?`<span>Last synced</span> <span translate="no">${when}</span>`:"");
+    body=`<div class="set" style="flex-direction:column;align-items:stretch;gap:10px">
+      <span class="lbl">Household code<small>Others enter this code under Settings → Join with a code.</small></span>
+      <div style="font:700 24px var(--f-mono);letter-spacing:.12em;text-align:center;padding:6px 0" translate="no">${esc(KLSync.fmtCode(sy.hid))}</div>
+      <div class="row"><button class="btn primary" data-act="hhShare">Invite</button><button class="btn" data-act="hhSync">Sync now</button></div>
+      <small class="note">${line}</small></div>
+      ${hh.confirmLeave?`<div class="set danger" style="flex-wrap:wrap"><span class="lbl">Leave the household? Your items stay on this phone but stop syncing.</span><span class="row"><button class="btn small" data-act="hhLeaveNo">Cancel</button><button class="btn small primary" style="background:var(--bad);border-color:var(--bad)" data-act="hhLeaveYes">Leave</button></span></div>`:`<button class="set danger" data-act="hhLeave"><span class="lbl">Leave household</span><span class="chev">›</span></button>`}`;
+  }
+  return `<div class="set-group" id="hhBox"><div class="set-title">Household</div><div class="set-list">${body}</div></div>`;
+}
+function refreshHH(){ const b=document.getElementById("hhBox"); if(b) b.outerHTML=householdHTML(); }
+function inviteText(code){
+  return I18N.tr("Join my kitchen in Kitchen Ledger.")+"\n\n"+I18N.tr("Code:")+" "+code+"\n\n"+I18N.tr("iPhone: open this link in Safari, then Share → Add to Home Screen:")+"\n"+window.KL_WEB_URL+"\n\n"+I18N.tr("Android: install the app:")+"\n"+window.KL_APK_URL+"\n\n"+I18N.tr("Then open Settings → Join with a code.");
+}
+
 function onSetting(t){
   const k=t.dataset.set; let v=t.type==="checkbox"?t.checked:t.value;
   if(k==="warnDays") v=Number(v);
@@ -942,6 +1002,29 @@ document.addEventListener("click",async e=>{
   else if(a==="manual") itemForm({qty:1,unit:"pcs"},"Add an item");
   else if(a==="data") dataSheet();
   else if(a==="sortSheet") sortSheet();
+  else if(a==="hhJoinOpen"){ hh={mode:"join",err:"",busy:false}; refreshHH(); setTimeout(()=>document.getElementById("hhCode")?.focus(),50); }
+  else if(a==="hhCancel"){ hh={mode:null,err:"",busy:false}; refreshHH(); }
+  else if(a==="hhCreate"){
+    if(offline()){ hh.err=I18N.tr("You're offline. Connect to the internet to create a household."); refreshHH(); return; }
+    hh.busy=true; hh.err=""; refreshHH();
+    try{ await KLSync.create(); hh={mode:null,err:"",busy:false}; toast("Household created. Tap Invite to share the code."); }
+    catch(e){ hh.busy=false; hh.err=I18N.tr("Couldn't create the household. Check your internet and the Firebase setup, then try again."); console.error(e); }
+    refreshHH(); render();
+  }
+  else if(a==="hhJoin"){
+    const code=document.getElementById("hhCode").value, mode=(layer.querySelector('input[name="hhMode"]:checked')||{}).value||"merge";
+    if(offline()){ hh.err=I18N.tr("You're offline. Connect to the internet to join."); refreshHH(); return; }
+    hh.busy=true; hh.err=""; refreshHH(); const inp=document.getElementById("hhCode"); if(inp) inp.value=code;
+    try{ await KLSync.join(code,mode); hh={mode:null,err:"",busy:false}; toast("You joined the household"); render(); }
+    catch(e){ hh.busy=false; hh.err=I18N.tr(e.user||"Couldn't join. Check your internet and the code, then try again."); console.error(e); }
+    refreshHH(); const inp2=document.getElementById("hhCode"); if(inp2) inp2.value=code;
+  }
+  else if(a==="hhShare"){ shareText(I18N.tr("Kitchen Ledger household"),inviteText(KLSync.fmtCode(S.sync.hid))); }
+  else if(a==="hhSync"){ KLSync.syncNow(); refreshHH(); }
+  else if(a==="hhLeave"){ hh.confirmLeave=true; refreshHH(); }
+  else if(a==="hhLeaveNo"){ hh.confirmLeave=false; refreshHH(); }
+  else if(a==="hhLeaveYes"){ hh.confirmLeave=false; KLSync.leave(); refreshHH(); toast("You left the household"); }
+  else if(a==="hideInstall"){ S.installHidden=true; commit(); }
   else if(a==="settings"){ ui.confirmWipe=false; settingsSheet(); }
   else if(a==="stopPics"){ picStop=true; }
   else if(a==="findPics"){ closeSheet(); ui.tab="pantry"; render(); S.items.forEach(i=>{ if(!i.image&&!i.photo) i.picChecked=false; }); enrichItems(true); }
@@ -951,7 +1034,7 @@ document.addEventListener("click",async e=>{
     const txt=await pickCsv(); if(!txt) return;
     let d=null; try{ d=JSON.parse(txt.replace(/^\uFEFF/,"")); }catch(e){}
     if(!d||d.app!=="KitchenLedger"||!d.state){ toast("That isn't a Kitchen Ledger backup file"); return; }
-    snapshot(); S=Object.assign({items:[],shopping:[],barcodes:{}},d.state); S.settings={...DEF_SETTINGS,...(S.settings||{})}; applyTheme(); closeSheet(); commit(); toast(`Backup restored: ${S.items.length} items`,true);
+    snapshot(); const curSync=S.sync; S=Object.assign({items:[],shopping:[],barcodes:{}},d.state); delete S.sync; if(curSync) S.sync=curSync; S.settings={...DEF_SETTINGS,...(S.settings||{})}; applyTheme(); closeSheet(); commit(); toast(`Backup restored: ${S.items.length} items`,true);
   }
   else if(a==="delExamples"){ snapshot(); S.items=S.items.filter(i=>!(i.example||/\(example\)$/.test(i.name))); closeSheet(); commit(); toast("Example items removed",true); }
   else if(a==="wipe"){ ui.confirmWipe=true; settingsSheet(); }
@@ -996,7 +1079,7 @@ document.addEventListener("click",async e=>{
   }
   else if(a==="shareList"){ shareText("Shopping list",S.shopping.filter(s=>!s.done).map(s=>"• "+s.name+(s.qty?" ("+s.qty+")":"")).join("\n")); }
   else if(a==="exportCsv"){ const name=`kitchen-inventory-${iso(today())}.csv`; if(!saveFile(name,KL.toCSV(S.items))) shareText("Kitchen inventory",KL.toCSV(S.items)); }
-  else if(a==="shareCsv"){ if(N) N.shareFile(`kitchen-inventory-${iso(today())}.csv`,KL.toCSV(S.items)); else shareText("Kitchen inventory",KL.toCSV(S.items)); }
+  else if(a==="shareCsv"){ if(N) N.shareFile(`kitchen-inventory-${iso(today())}.csv`,KL.toCSV(S.items)); else WP.saveFile(`kitchen-inventory-${iso(today())}.csv`,KL.toCSV(S.items)); }
   else if(a==="importCsv"){ const txt=await pickCsv(); if(!txt) return; if(/^\s*\{/.test(txt.replace(/^\uFEFF/,""))){ toast("That's a backup file. Use Settings → Restore a backup."); return; } importPreview=KL.csvToItems(txt,iso(today())); showImport(); }
   else if(a==="doImport"){
     snapshot(); const mode=(layer.querySelector('input[name="imode"]:checked')||{}).value||"merge";
@@ -1033,6 +1116,7 @@ load(); I18N.start(); render();
 syncReminders();
 try{ if(N&&N.takeOpen&&N.takeOpen()==="soon"){ ui.loc="soon"; render(); } }catch(e){}
 setTimeout(()=>enrichItems(),2500);
+if(window.KLSync) KLSync.start({getS:()=>S,save:saveQuiet,render:()=>{ if(!layer.innerHTML||!document.querySelector("#itemForm,[data-keep]")) render(); },onStatus:()=>{ if(document.getElementById("hhBox")) document.getElementById("hhBox").outerHTML=householdHTML(); }});
 })();
 </script>
 </body>

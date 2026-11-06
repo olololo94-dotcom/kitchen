@@ -1,0 +1,14 @@
+{
+  "name": "Kitchen Ledger",
+  "short_name": "Kitchen",
+  "description": "Kitchen inventory with barcode scanning, receipts, recipes and a shared shopping list.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F3F5F1",
+  "theme_color": "#F3F5F1",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
